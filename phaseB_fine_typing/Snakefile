@@ -1,0 +1,110 @@
+bio    = ['AKI', 'ATN']
+labels = ['case', 'control']
+groups = ['20241025__200743__BWH_20241025_SHRUTI_RACHEL', '20240803__182820__BWH_20240803_skin_Shruti_kidney']
+samples1 = ['output-XETG00392__0045655__BS21-N65682A2__20241025__201009',	
+           'output-XETG00392__0045655__BS22-T41795A1__20241025__201009', 
+           'output-XETG00392__0045655__BS24-M35359A1__20241025__201009',
+           'output-XETG00392__0045655__BS24-R31519A2__20241025__201009']
+samples2 = ['output-XETG00150__0018462__BS22_12012A1__20240803__183643',
+ 	    'output-XETG00150__0018462__BS23_49001A1__20240803__183643',
+            'output-XETG00150__0018462__BS23_52206A2__20240803__183643',
+	    'output-XETG00150__0018462__BS2_61615A1__20240803__183643']
+
+output_h5ad1 = expand("h5ad/{group}/{sample}_scimilarity.h5ad", group=groups[0], sample=samples1)
+output_h5ad1_Tcells = expand("h5ad/{group}/{sample}_Tcells.h5ad", group=groups[0], sample=samples1)
+output_h5ad2_Tcells = expand("h5ad/{group}/{sample}_Tcells.h5ad", group=groups[1], sample=samples2)
+output_h5ad2 = expand("h5ad/{group}/{sample}_scimilarity.h5ad", group=groups[1], sample=samples2)
+output_fig_dpt2 = expand("fig/{group}/{sample}_dpt.png", group=groups[1], sample=samples2)
+
+
+rule run_scimilarity_annot:
+     input:
+         h5ad = "../phaseA_process/h5ad/{group}/{sample}.h5ad",
+     output:
+         h5ad = "h5ad/{group}/{sample}_scimilarity.h5ad",
+         fig  = "fig/{group}__{sample}_scimilarity.png"
+     params:
+         cell_count = 100
+     conda: "scimilarity"
+     script:
+         "scripts/scimilarity.py"
+
+
+rule run_dpt:
+     input:
+         h5ad = "../phaseA_process/h5ad/{group}/{sample}.h5ad",
+     output:
+         fig  = "fig/{group}/{sample}_dpt.png"
+     conda: "scimilarity"
+     script:
+         "scripts/dpt.py"
+
+
+rule subset_Tcells:
+     input:
+         m_annot = "../others_check_rds/miles_kidney_annotation.tsv",
+         h5ad = "../phaseA_process/h5ad/{group}/{sample}.h5ad",
+     output:
+         h5ad  = "h5ad/{group}/{sample}_Tcells.h5ad"
+     conda: "scimilarity"
+     script:
+         "scripts/subset_cells.py"
+
+
+rule foxp3_visualize_umap:
+     input:
+         case_h5ads = output_h5ad1_Tcells,
+         cont_h5ads = output_h5ad2_Tcells
+     output:
+         fig1 = "fig/foxp3_umap.png",
+         fig2 = "fig/foxp3_cooccurprob_case1.png",
+         fig4 = "fig/foxp3_cooccurprob_cont1.png",
+         #fig3 = "fig/foxp3_cooccurprob_case2.png",
+         #fig5 = "fig/foxp3_cooccurprob_cont2.png",
+         tabs = "fig/foxp3_cooccurprob_treg.tsv"
+     conda: "scimilarity"
+     script:
+         "scripts/visualize_biomarker.py"
+
+
+rule plot_foxp3_in_tcells:
+     input:
+          tabs = rules.foxp3_visualize_umap.output.tabs
+     output:
+          fig = "fig/tcell_cooccur_curve.pdf"
+     conda: "r"
+     script:
+          "scripts/tidy_cooccur_tcells.R"
+
+
+rule Treg_analysis:
+     input:
+         h5ad = "../phaseA_process/h5ad/{group}/{sample}.h5ad",
+     output:
+         fig  = "fig/{group}/{sample}_dpt.png"
+     conda: "scimilarity"
+     script:
+         "scripts/dpt.py"
+
+
+rule cxcl_visualize_spatial:
+     input:
+          case_h5ads = output_h5ad1,
+          cont_h5ads = output_h5ad2
+     output:
+          fig = "fig/cxcl_spatial.png"
+     conda: "scimilarity"
+     script:
+          "scripts/spatial_biomarker.py"
+
+
+rule all:
+     input:
+         output_h5ad1, output_h5ad2, 
+         output_h5ad1_Tcells,
+         ###output_fig_dpt2,
+         "fig/cxcl_spatial.png", 
+         rules.foxp3_visualize_umap.output,
+         rules.plot_foxp3_in_tcells.output,
+     default_target: True
+

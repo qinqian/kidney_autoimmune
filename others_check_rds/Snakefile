@@ -1,0 +1,14 @@
+rule all:
+    input:
+        "miles_kidney_annotation.tsv"
+
+
+rule extract_rds:
+    output:
+         "miles_kidney_annotation.tsv"
+    conda: "r"
+    shell:
+         """
+         Rscript load_export_meta.r
+         """
+

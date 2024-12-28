@@ -1,0 +1,78 @@
+import os
+import matplotlib.pyplot as plt
+import pandas as pd
+import squidpy as sq
+import scanpy as sc
+import matplotlib.pyplot as plt
+import seaborn as sns
+from spatialdata_io import xenium
+from scimilarity.utils import lognorm_counts, align_dataset
+from scimilarity import CellAnnotation
+
+
+def visualize_spatial_marker(ads, out_fig, marker=['CXCL9', 'CXCL10']):
+    fig, ax = plt.subplots(2, 3)
+    fig.set_size_inches(16, 6)
+    ad = sc.read(ads.case_h5ads[0])
+    sq.pl.spatial_scatter(
+        ad,
+        library_id="spatial",
+        shape=None,
+        color=marker[0],
+        wspace=0.1,
+        legend_loc='right margin',
+        ax=ax[0][0]
+    )
+    sq.pl.spatial_scatter(
+        ad,
+        library_id="spatial",
+        shape=None,
+        color=marker[1], wspace=0.1,
+        legend_loc='right margin',
+        ax=ax[0][1]
+    )
+    sq.pl.spatial_scatter(
+        ad,
+        library_id="spatial",
+        shape=None,
+        color="celltype_hint", wspace=0.1,
+        legend_loc='right margin',
+        ax=ax[0][2]
+    )
+    ad = sc.read(ads.cont_h5ads[0])
+    sq.pl.spatial_scatter(
+        ad,
+        library_id="spatial",
+        shape=None,
+        color=marker[0],
+        wspace=0.1,
+        legend_loc='right margin',
+        ax=ax[1][0]
+    )
+    sq.pl.spatial_scatter(
+        ad,
+        library_id="spatial",
+        shape=None,
+        color=marker[1],
+        wspace=0.1,
+        legend_loc='right margin',
+        ax=ax[1][1]
+    )
+    sq.pl.spatial_scatter(
+        ad,
+        library_id="spatial",
+        shape=None,
+        color="celltype_hint", wspace=0.1,
+        legend_loc='right margin',
+        ax=ax[0][2]
+    )
+    #fig.subplots_adjust(right=6)
+    plt.savefig(out_fig)
+
+
+def run(data_path, out_path, threads, config):
+    visualize_spatial_marker(data_path, out_path.fig)
+
+
+run(snakemake.input, snakemake.output, snakemake.threads, snakemake.config)
+

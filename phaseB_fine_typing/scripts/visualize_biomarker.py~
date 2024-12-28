@@ -1,0 +1,74 @@
+import os
+import matplotlib.pyplot as plt
+import pandas as pd
+import squidpy as sq
+import scanpy as sc
+import matplotlib.pyplot as plt
+import seaborn as sns
+from spatialdata_io import xenium
+from scimilarity.utils import lognorm_counts, align_dataset
+from scimilarity import CellAnnotation
+
+
+def colocalize_analysis(ad):
+    sq.gr.spatial_neighbors(ad, coord_type="generic", delaunay=True)
+    sq.gr.nhood_enrichment(ad, cluster_key="celltype_hint", numba_parallel=False, show_progress_bar=False, n_jobs=1)
+    sq.gr.co_occurrence(
+        ad, cluster_key="celltype_hint", n_jobs=1, show_progress_bar=False
+    )
+
+
+def visualize_spatial_marker(ads, out_fig, marker=["FOXP3"]):
+    ad = sc.read(ads.case_h5ads[0])
+    colocalize_analysis(ad)
+
+    sq.pl.co_occurrence(
+        ad,
+        cluster_key="celltype_hint",
+        clusters="regulatory T cell",
+        figsize=(10, 10)
+    )
+    #plt.savefig(out_fig.fig2)
+
+    fig, ax = plt.subplots(4, 4)
+    fig.set_size_inches(15, 10)
+
+    sc.pl.umap(ad, ax=ax[0][0], color=marker, show=False)
+    sc.pl.umap(ad, ax=ax[0][1], color=['celltype_hint'], show=False)
+    sq.pl.nhood_enrichment(ad, cluster_key="celltype_hint", ax=ax[0][2])
+
+    sc.pl.umap(ad[ad.obs["celltype_hint"] == 'regulatory T cell', 'FOXP3'], color='FOXP3',
+               show=False, ax=ax[0][3])
+
+    ad = sc.read(ads.case_h5ads[1])
+    colocalize_analysis(ad)
+    sc.pl.umap(ad, ax=ax[1][0], color=marker, show=False)
+    sc.pl.umap(ad, ax=ax[1][1], color=['celltype_hint'], show=False)
+    sq.pl.nhood_enrichment(ad, cluster_key="celltype_hint", ax=ax[1][2])
+
+    #sq.pl.co_occurrence(
+    #    ad,
+    #    cluster_key="celltype_hint",
+    #    clusters="regulatory T cell",
+    #    figsize=(10, 10),
+    #)
+    #plt.savefig(out_fig.fig3)
+
+    ad = sc.read(ads.cont_h5ads[0])
+    sc.pl.umap(ad, ax=ax[2][0], color=marker, show=False)
+    sc.pl.umap(ad, ax=ax[2][1], color=['celltype_hint'], show=False)
+
+    ad = sc.read(ads.cont_h5ads[1])
+    sc.pl.umap(ad, ax=ax[3][0], color=marker, show=False)
+    sc.pl.umap(ad, ax=ax[3][1], color=['celltype_hint'], show=False)
+
+    plt.savefig(out_fig.fig1)
+    fig.subplots_adjust(right=0.5, left=0.02, top=0.95, bottom=0.1)
+
+
+def run(data_path, out_path, threads, config):
+    visualize_spatial_marker(data_path, out_path)
+
+
+run(snakemake.input, snakemake.output, snakemake.threads, snakemake.params)
+

@@ -1,0 +1,56 @@
+library(Seurat)
+library(ggplot2)
+library(argparse)
+library(stringr)
+
+parser <- ArgumentParser(prog="load_view", description="")
+parser$add_argument("data", help="input xenium directory")
+parser$add_argument("--output", help="output prefix")
+parser$add_argument("--normalize", action="store_true", help="output prefix")
+
+args = parser$parse_args()
+xen.obj <- LoadXenium(args$data)
+
+xen.obj <- subset(xen.obj, subset=nCount_Xenium > 0)
+VlnPlot(xen.obj, features = c("nFeature_Xenium", "nCount_Xenium"), ncol = 2, pt.size = 0) + ylim(0, 250)
+ImageDimPlot(xen.obj, molecules=c("NOTCH1", "NOTCH3", "TP53"), fov="fov", nmols=2000)
+
+xen.normalize <- function(x) {
+    x <- SCTransform(x, assay = "Xenium")
+    x <- RunPCA(x, npcs = 30, features = rownames(x))
+    x <- RunUMAP(x, dims = 1:30)
+    x <- FindNeighbors(x, reduction = "pca", dims = 1:30)
+    x <- FindClusters(x, resolution = 0.3)
+    x
+    }
+
+ImageFeaturePlot(xen.obj, features=c("NOTCH3", "POSTN", "COL1A1"), size=0.75, cols=c("white", "red"))
+
+if (args$normalize) {
+    xen.obj <- xen.normalize(xen.obj)
+    saveRDS(xen.obj, 'rds/XETG00392__0044973__26AP17_13c__20241113__210855.rds')
+} else {
+    xen.obj <- readRDS('rds/XETG00392__0044973__26AP17_13c__20241113__210855.rds')
+}
+
+axis <- ggh4x::guide_axis_truncated(
+  trunc_lower = unit(0, "npc"),
+  trunc_upper = unit(3, "cm")
+)
+
+pdf(str_c(c('figure/', args$output, "umap.pdf"), collapse="_"))
+p.umap = DimPlot(xen.obj)+
+    guides(x = axis, y = axis)+
+    theme(
+        axis.line = element_line(arrow = arrow(type = "closed", length = unit(10, 'pt'))),
+        axis.title = element_text(hjust = 0))+
+    scale_x_continuous(breaks = NULL) +
+    scale_y_continuous(breaks = NULL) +
+    xlab("UMAP1")+ylab("UMAP2")
+print(p.umap)
+dev.off()
+
+pdf(str_c(c('figure/', args$output, "markers.pdf"), collapse="_"))
+p.feat = FeaturePlot(xen.obj, features=c("NOTCH3", "POSTN", "COL1A1", "THY1", "COL6A1", "MALAT1"))
+print(p.feat)
+dev.off()

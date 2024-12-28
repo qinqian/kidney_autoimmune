@@ -1,0 +1,30 @@
+groups = ['20241025__200743__BWH_20241025_SHRUTI_RACHEL', '20240803__182820__BWH_20240803_skin_Shruti_kidney']
+samples1 = ['output-XETG00392__0045655__BS21-N65682A2__20241025__201009',	
+           'output-XETG00392__0045655__BS22-T41795A1__20241025__201009', 
+           'output-XETG00392__0045655__BS24-M35359A1__20241025__201009',
+           'output-XETG00392__0045655__BS24-R31519A2__20241025__201009']
+
+samples2 = ['output-XETG00150__0018462__BS22_12012A1__20240803__183643',
+ 	    'output-XETG00150__0018462__BS23_49001A1__20240803__183643',
+            'output-XETG00150__0018462__BS23_52206A2__20240803__183643',
+	    'output-XETG00150__0018462__BS2_61615A1__20240803__183643']
+
+rule process_xenium:
+     input:
+         case = "../data/kidney/{group}/{sample}"
+     output:
+         h5ad = "h5ad/{group}/{sample}.h5ad",
+         fig = "fig/{group}__{sample}_spatial_check.png"
+     conda: "scimilarity"
+     script:
+         "scripts/preprocess.py"
+
+
+output_h5ad1 = expand("h5ad/{group}/{sample}.h5ad", group=groups[0], sample=samples1)
+output_h5ad2 = expand("h5ad/{group}/{sample}.h5ad", group=groups[1], sample=samples2)
+
+rule all:
+     input:
+         output_h5ad1, output_h5ad2
+     default_target: True
+
