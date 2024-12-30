@@ -10,78 +10,49 @@ from scimilarity.utils import lognorm_counts, align_dataset
 from scimilarity import CellAnnotation
 
 
-def visualize_spatial_marker(ads, out_fig, marker=['CXCL9', 'CXCL10', "FOXP3"]):
-    fig, ax = plt.subplots(2, 4)
-    fig.set_size_inches(25, 10)
-    ad = sc.read(ads.case_h5ads[0])
-    sq.pl.spatial_scatter(
-        ad,
-        library_id="spatial",
-        shape=None,
-        color=marker[0],
-        wspace=0,
-        ax=ax[0][0],
-        legend_loc=None, colorbar=False
-    )
-    sq.pl.spatial_scatter(
-        ad,
-        library_id="spatial",
-        shape=None,
-        color=marker[1], wspace=0,
-        ax=ax[0][1],
-        legend_loc=None, colorbar=False
-    )
-    sq.pl.spatial_scatter(
-        ad,
-        library_id="spatial",
-        shape=None,
-        color=marker[2], wspace=0,
-        ax=ax[0][2],
-        legend_loc=None, colorbar=False
-    )
-    sq.pl.spatial_scatter(
-        ad,
-        library_id="spatial",
-        shape=None,
-        color="celltype_hint", wspace=0,
-        ax=ax[0][3],
-    )
-    ad = sc.read(ads.cont_h5ads[0])
-    sq.pl.spatial_scatter(
-        ad,
-        library_id="spatial",
-        shape=None,
-        color=marker[0],
-        wspace=0,
-        ax=ax[1][0],
-        legend_loc=None, colorbar=False
-    )
-    sq.pl.spatial_scatter(
-        ad,
-        library_id="spatial",
-        shape=None,
-        color=marker[1],
-        wspace=0,
-        ax=ax[1][1],
-        legend_loc=None, colorbar=False
-    )
-    sq.pl.spatial_scatter(
-        ad,
-        library_id="spatial",
-        shape=None,
-        color=marker[2],
-        wspace=0,
-        ax=ax[1][2],
-        legend_loc=None, colorbar=False
-    )
-    sq.pl.spatial_scatter(
-        ad,
-        library_id="spatial",
-        shape=None,
-        color="celltype_hint", wspace=0,
-        ax=ax[1][3],
-    )
-    fig.subplots_adjust(right=0.5, left=0.02, top=0.95, bottom=0.1)
+def visualize_spatial_marker(ads, out_fig, marker=['CXCL9', 'CXCL10', "CXCL11", "FOXP3"]):
+    fig, ax = plt.subplots(4, 8)
+    fig.set_size_inches(20, 12)
+    for index, case in enumerate(ads.case_h5ads):
+        ad = sc.read(case)
+        for idx, m in enumerate(marker):
+            sq.pl.spatial_scatter(
+                ad,
+                library_id="spatial",
+                shape=None,
+                color=m,
+                wspace=0, hspace=0,
+                ax=ax[index][idx],
+                legend_loc=None, colorbar=False, frameon=False, fig=fig)
+            ax[index][idx].set_axis_off()
+        #sq.pl.spatial_scatter(
+        #    ad,
+        #    library_id="spatial",
+        #    shape=None,
+        #    color="celltype_hint", wspace=0,
+        #    ax=ax[index][3],
+        #)
+
+    for index, cont in enumerate(ads.cont_h5ads):
+        ad = sc.read(cont)
+        for idx, m in enumerate(marker):
+            sq.pl.spatial_scatter(
+                ad,
+                library_id="spatial",
+                shape=None,
+                color=m,
+                wspace=0, hspace=0,
+                ax=ax[index][idx+4],
+                legend_loc=None, colorbar=False, frameon=False, fig=fig)
+            ax[index][idx+4].set_axis_off()
+        #sq.pl.spatial_scatter(
+        #    ad,
+        #    library_id="spatial",
+        #    shape=None,
+        #    color="celltype_hint", wspace=0,
+        #    ax=ax[index][3],
+        #)
+    fig.subplots_adjust(right=0.9, left=0.02, top=0.95, bottom=0.1, wspace=0.0, hspace=0.0)
     plt.savefig(out_fig)
 
 

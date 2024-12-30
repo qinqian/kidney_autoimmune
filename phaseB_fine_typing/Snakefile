@@ -103,6 +103,7 @@ rule all:
          output_h5ad1, output_h5ad2, 
          output_h5ad1_Tcells,
          ###output_fig_dpt2,
+
          "fig/cxcl_spatial.png", 
          rules.foxp3_visualize_umap.output,
          rules.plot_foxp3_in_tcells.output,

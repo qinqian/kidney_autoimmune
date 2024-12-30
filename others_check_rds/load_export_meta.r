@@ -13,4 +13,7 @@ dim(kidn_seu_obj$seur$harmony)
 
 dim(kidn_seu_obj$seur$umap)
 
-DimPlot(kidn_seu_obj$seur)
+pdf("kidney_umap.pdf", width=6, height=6)
+DimPlot(kidn_seu_obj$seur, label=T, repel=TRUE)
+dev.off()
+

@@ -1,14 +1,20 @@
 rule all:
     input:
-        "miles_kidney_annotation.tsv"
+        "miles_kidney_annotation.tsv", "kidney_umap.pdf",
+        "kidney_groupby_condition.pdf"
 
 
 rule extract_rds:
     output:
-         "miles_kidney_annotation.tsv"
+         "miles_kidney_annotation.tsv", "kidney_umap.pdf"
     conda: "r"
     shell:
          """
          Rscript load_export_meta.r
          """
 
+rule plot:
+    output:
+         "kidney_groupby_condition.pdf"
+    conda: "r"
+    script: "visualize_markers.R"
