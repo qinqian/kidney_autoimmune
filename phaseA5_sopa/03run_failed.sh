@@ -1,0 +1,3 @@
+
+/PHShome/qq06/.conda/envs/sopa/bin/python3.1 run_sopa_tune_param.py ../data/kidney/20240803__182820__BWH_20240803_skin_Shruti_kidney/output-XETG00150__0018462__BS23_52206A2__20240803__183643_cellpose.zarr 20240803__182820__BWH_20240803_skin_Shruti_kidney/output-XETG00150__0018462__BS23_52206A2__20240803__183643
+

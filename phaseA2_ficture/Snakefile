@@ -1,0 +1,71 @@
+configfile: 'config.yaml'
+
+bio    = ['ICI-AKI', 'ICI-AKI', 'ATN', 'ATN', 'ATN', 'ICI-AKI', 'ICI-AKI', 'ATN']
+labels = ['case', 'case', 'control', 'control', 'control', 'case', 'case', 'control']
+groups = ['20241025__200743__BWH_20241025_SHRUTI_RACHEL', '20241025__200743__BWH_20241025_SHRUTI_RACHEL',
+          '20241025__200743__BWH_20241025_SHRUTI_RACHEL', '20241025__200743__BWH_20241025_SHRUTI_RACHEL',
+          '20240803__182820__BWH_20240803_skin_Shruti_kidney', '20240803__182820__BWH_20240803_skin_Shruti_kidney',
+          '20240803__182820__BWH_20240803_skin_Shruti_kidney', '20240803__182820__BWH_20240803_skin_Shruti_kidney']
+
+samples1 = ['output-XETG00392__0045655__BS21-N65682A2__20241025__201009',	
+            'output-XETG00392__0045655__BS22-T41795A1__20241025__201009', 
+            'output-XETG00392__0045655__BS24-M35359A1__20241025__201009',
+            'output-XETG00392__0045655__BS24-R31519A2__20241025__201009']
+samples2 = ['output-XETG00150__0018462__BS22_12012A1__20240803__183643',
+ 	        'output-XETG00150__0018462__BS23_49001A1__20240803__183643',
+            'output-XETG00150__0018462__BS23_52206A2__20240803__183643',
+	        'output-XETG00150__0018462__BS2_61615A1__20240803__183643']
+
+output_gz  = expand("../data/kidney/{group}/{sample}/filtered.matrix.{sample}.tsv.gz", zip, group=groups, sample=samples1+samples2)
+output_ficture_case = expand("ficture_kidney/{group}/{sample}_ficture", zip, group=groups, sample=samples1+samples2)
+
+
+wildcard_constraints:
+    group = "[A-Za-z0-9].*",
+    sample = "output.*"
+
+
+rule convert_xenium_ficture:
+    input:
+        input = "../data/kidney/{group}/{sample}/transcripts.parquet"
+    output:
+        output = "../data/kidney/{group}/{sample}/filtered.matrix.{sample}.tsv.gz",
+        feature = "../data/kidney/{group}/{sample}/feature.clean.{sample}.tsv.gz"
+    params:
+        output = "../data/kidney/{group}/{sample}/filtered.matrix.{sample}.tsv"
+    conda: config['test00']
+    threads: 1
+    shell:
+        """
+        python ficture_git/misc/format_xenium.py --input {input.input} --output {params.output} --feature {output.feature} --min_phred_score 15 --dummy_genes BLANK\|NegCon
+        sort -k2,2g {params.output} | gzip -c > {output.output}
+        """
+
+
+rule ficture_seg:
+    input:
+        mat = rules.convert_xenium_ficture.output.output,
+        feat = rules.convert_xenium_ficture.output.feature,
+    output:
+        case = directory("ficture_kidney/{group}/{sample}_ficture")
+    params:
+        directory = "../data/kidney/{group}/{sample}/"
+    conda: config['test00']
+    threads: 1
+    shell:
+        """
+        ficture run_together --in-tsv {input.mat} \
+            --in-minmax {params.directory}/coordinate_minmax.tsv \
+            --in-feature {input.feat} \
+            --major-axis Y \
+            --out-dir {output.case} \
+            --all 
+        """
+
+
+rule all:
+     input:
+         output_gz, 
+         output_ficture_case
+     default_target: True
+

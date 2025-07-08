@@ -12,10 +12,16 @@ from scimilarity import CellAnnotation
 
 
 def colocalize_analysis(ad, key='celltype_hint2', target="TregFOXP3high"):
-    print(ad.obs['celltype_hint2'])
     sq.gr.spatial_neighbors(ad, coord_type="generic", delaunay=True)
     sq.gr.nhood_enrichment(ad, cluster_key=key, numba_parallel=False, show_progress_bar=False, n_jobs=1)
     sq.gr.co_occurrence(ad, cluster_key=key, n_jobs=1, show_progress_bar=False)
+
+    print('*************')
+    print(ad.obs['celltype_hint2'])
+    #### sq.gr.spatial_neighbors(ad, coord_type="generic", delaunay=True)
+    sq.gr.nhood_enrichment(ad, cluster_key=key, numba_parallel=False, show_progress_bar=False, n_jobs=1)
+    sq.gr.co_occurrence(ad, cluster_key=key, n_jobs=1, show_progress_bar=False)
+    print('-------------')
 
     out = ad.uns['celltype_hint2_co_occurrence']['occ']
     interval = ad.uns['celltype_hint2_co_occurrence']['interval'][1:]
@@ -50,36 +56,25 @@ def plot_codep(ad, out_fig, conn_key="TregFOXP3high"):
 def visualize_spatial_marker(ads, out_fig, marker=["FOXP3"]):
     dfs = []
 
-    fig, ax = plt.subplots(6, 2)
+    fig, ax = plt.subplots(8, 2)
     fig.set_size_inches(18, 12)
     n = 0
-    for case in ads.case_h5ads[:3]:
+    for case in ads.case_h5ads:
+        group = case.split('/')[-3]
         ad = sc.read(case)
         celltype_hint = np.array(list(ad.obs["celltype_hint"].values))
         #x = ad[celltype_hint == 'regulatory T cell', 'FOXP3'].X.toarray()
         #ax[0][3].hist(x)
-        df = plot_codep(ad, out_fig.fig2)
-        df['sample'] = os.path.basename(case).replace('output−XETG00150__0018462__', '').replace('__20241025__201009_Tcells_Tcells.h5ad', '').replace('output−XETG00392__0045655__', '').replace('__20240803__183643_Tcells.h5ad', '')
-        df['group']  = 'AKI'
-        dfs.append(df)
-        sc.pl.umap(ad, ax=ax[n][0], color=marker, show=False)
-        sc.pl.umap(ad, ax=ax[n][1], color=['celltype_hint'], show=False)
-        n += 1
-
-    for cont in ads.cont_h5ads[:3]:
-        ad = sc.read(cont)
-        #sc.pl.umap(ad, ax=ax[2][0], color=marker, show=False)
-        #sc.pl.umap(ad, ax=ax[2][1], color=['celltype_hint'], show=False)
-        celltype_hint = np.array(list(ad.obs["celltype_hint"].values))
-        #x = ad[ad.obs["celltype_hint"] == 'regulatory T cell', 'FOXP3'].X.toarray()
-        #ax[2][3].hist(x)
-        df = plot_codep(ad, out_fig.fig4)
-        df['sample'] = os.path.basename(cont).replace('output−XETG00392__0045655__', '').replace('__20240803__183643_Tcells.h5ad', '').replace('output−XETG00150__0018462__', '').replace('__20241025__201009_Tcells_Tcells.h5ad', '')
-        df['group']  = 'ATN'
-        dfs.append(df)
-        sc.pl.umap(ad, ax=ax[n][0], color=marker, show=False)
-        sc.pl.umap(ad, ax=ax[n][1], color=['celltype_hint'], show=False)
-        n += 1
+        try:
+            df = plot_codep(ad, out_fig.fig2)
+            df['sample'] = os.path.basename(case).replace('output−XETG00150__0018462__', '').replace('__20241025__201009_Tcells.h5ad', '').replace('output−XETG00392__0045655__', '').replace('__20240803__183643_Tcells.h5ad', '')
+            df['group']  = group
+            dfs.append(df)
+            sc.pl.umap(ad, ax=ax[n][0], color=marker, show=False)
+            sc.pl.umap(ad, ax=ax[n][1], color=['celltype_hint'], show=False)
+            n += 1
+        except:
+            n += 1
 
     fig.subplots_adjust(right=0.5, left=0.02, top=0.95, bottom=0.1, wspace=0.4, hspace=0.4)
     fig.savefig(out_fig.fig1)

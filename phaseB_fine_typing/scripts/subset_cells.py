@@ -40,15 +40,30 @@ def retype_T_withscimilarity(ad, plot=False, cell_threshold=10, gene_threshold=4
 
 def run(data_path, out_path, threads, config):
     df = pd.read_csv(data_path.m_annot)
+
     adata = sc.read(data_path.h5ad)
-    adata = adata[adata.obs.cell_id.isin(df.loc[df.coarse_ids == "T", :].cell_id), :]
-    print(adata.shape)
-    adata.X = adata.layers['counts'].copy()
-    print(adata.obs.columns)
-    print('--------')
-    adata = retype_T_withscimilarity(adata, cell_threshold=20)
-    print('--------')
-    print(adata.obs.columns)
+
+    print(config.subtype)
+    if config.subtype:
+        adata = adata[adata.obs.cell_id.isin(df.loc[df.coarse_ids == "T", :].cell_id), :]
+        print(adata.shape)
+        adata.X = adata.layers['counts'].copy()
+        print(adata.obs.columns)
+        print('--------')
+        adata = retype_T_withscimilarity(adata, cell_threshold=20)
+        print('--------')
+        print(adata.obs.columns)
+    else:
+        # borrow miles' annotation
+        print(adata.shape)
+        adata = adata[adata.obs.cell_id.isin(df.cell_id), :]
+        adata.obs.loc[:, 'preannotation'] = pd.Categorical(adata.obs.cell_id.map(dict(zip(df.cell_id, df.coarse_ids))))
+        print(adata.obs['preannotation'].isnull().sum())
+        key = 'preannotation'
+        sq.gr.spatial_neighbors(adata, coord_type="generic", delaunay=True)
+        sq.gr.nhood_enrichment(adata, cluster_key=key, numba_parallel=False, show_progress_bar=False, n_jobs=1)
+        sq.gr.co_occurrence(adata, cluster_key=key, n_jobs=1, show_progress_bar=False)
+
     adata.write(out_path.h5ad)
 
 

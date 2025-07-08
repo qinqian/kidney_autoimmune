@@ -1,28 +1,33 @@
-bio    = ['AKI', 'ATN']
-labels = ['case', 'control']
-groups = ['20241025__200743__BWH_20241025_SHRUTI_RACHEL', '20240803__182820__BWH_20240803_skin_Shruti_kidney']
+bio    = ['ICI-AKI', 'ICI-AKI', 'ATN', 'ATN', 'ATN', 'ICI-AKI', 'ICI-AKI', 'ATN']
+labels = ['case', 'case', 'control', 'control', 'control', 'case', 'case', 'control']
+groups = ['20241025__200743__BWH_20241025_SHRUTI_RACHEL', '20241025__200743__BWH_20241025_SHRUTI_RACHEL',
+          '20241025__200743__BWH_20241025_SHRUTI_RACHEL', '20241025__200743__BWH_20241025_SHRUTI_RACHEL',
+          '20240803__182820__BWH_20240803_skin_Shruti_kidney', '20240803__182820__BWH_20240803_skin_Shruti_kidney',
+          '20240803__182820__BWH_20240803_skin_Shruti_kidney', '20240803__182820__BWH_20240803_skin_Shruti_kidney']
+
 samples1 = ['output-XETG00392__0045655__BS21-N65682A2__20241025__201009',	
-           'output-XETG00392__0045655__BS22-T41795A1__20241025__201009', 
-           'output-XETG00392__0045655__BS24-M35359A1__20241025__201009',
-           'output-XETG00392__0045655__BS24-R31519A2__20241025__201009']
+            'output-XETG00392__0045655__BS22-T41795A1__20241025__201009', 
+            'output-XETG00392__0045655__BS24-M35359A1__20241025__201009',
+            'output-XETG00392__0045655__BS24-R31519A2__20241025__201009']
 samples2 = ['output-XETG00150__0018462__BS22_12012A1__20240803__183643',
  	    'output-XETG00150__0018462__BS23_49001A1__20240803__183643',
             'output-XETG00150__0018462__BS23_52206A2__20240803__183643',
 	    'output-XETG00150__0018462__BS2_61615A1__20240803__183643']
 
-output_h5ad1 = expand("h5ad/{group}/{sample}_scimilarity.h5ad", group=groups[0], sample=samples1)
-output_h5ad1_Tcells = expand("h5ad/{group}/{sample}_Tcells.h5ad", group=groups[0], sample=samples1)
-output_h5ad2_Tcells = expand("h5ad/{group}/{sample}_Tcells.h5ad", group=groups[1], sample=samples2)
-output_h5ad2 = expand("h5ad/{group}/{sample}_scimilarity.h5ad", group=groups[1], sample=samples2)
+output_h5ad = expand("h5ad/{bio}/{group}/{sample}_scimilarity.h5ad", zip, bio=bio, group=groups, sample=samples1+samples2)
+output_h5ad_Tcells = expand("h5ad/{bio}/{group}/{sample}_Tcells.h5ad", zip, bio=bio, group=groups, sample=samples1+samples2)
+output_h5ad_seucells = expand("h5ad/{bio}/{group}/{sample}_seuratcells.h5ad", zip, bio=bio, group=groups, sample=samples1+samples2)
+nenrich_figs = expand("h5ad/{bio}/{group}/{sample}_seuratcells.png", zip, bio=bio, group=groups, sample=samples1+samples2)
+
 output_fig_dpt2 = expand("fig/{group}/{sample}_dpt.png", group=groups[1], sample=samples2)
 
 
 rule run_scimilarity_annot:
      input:
-         h5ad = "../phaseA_process/h5ad/{group}/{sample}.h5ad",
+         h5ad = "../phaseA_process/h5ad/{bio}/{group}/{sample}.h5ad",
      output:
-         h5ad = "h5ad/{group}/{sample}_scimilarity.h5ad",
-         fig  = "fig/{group}__{sample}_scimilarity.png"
+         h5ad = "h5ad/{bio}/{group}/{sample}_scimilarity.h5ad",
+         fig  = "fig/{bio}/{group}__{sample}_scimilarity.png"
      params:
          cell_count = 100
      conda: "scimilarity"
@@ -43,28 +48,52 @@ rule run_dpt:
 rule subset_Tcells:
      input:
          m_annot = "../others_check_rds/miles_kidney_annotation.tsv",
-         h5ad = "../phaseA_process/h5ad/{group}/{sample}.h5ad",
+         h5ad = "../phaseA_process/h5ad/{bio}/{group}/{sample}.h5ad",
      output:
-         h5ad  = "h5ad/{group}/{sample}_Tcells.h5ad"
+         h5ad  = "h5ad/{bio}/{group}/{sample}_Tcells.h5ad"
      conda: "scimilarity"
+     params: subtype = True
+     script:
+         "scripts/subset_Tcells.py"
+
+
+rule subset_SeuratCells:
+     input:
+         m_annot = "../others_check_rds/miles_kidney_annotation.tsv",
+         h5ad = "../phaseA_process/h5ad/{bio}/{group}/{sample}.h5ad",
+     output:
+         h5ad  = "h5ad/{bio}/{group}/{sample}_seuratcells.h5ad"
+     conda: "scimilarity"
+     params: subtype = False
      script:
          "scripts/subset_cells.py"
 
 
 rule foxp3_visualize_umap:
      input:
-         case_h5ads = output_h5ad1_Tcells,
-         cont_h5ads = output_h5ad2_Tcells
+         case_h5ads = output_h5ad_Tcells,
      output:
          fig1 = "fig/foxp3_umap.png",
          fig2 = "fig/foxp3_cooccurprob_case1.png",
-         fig4 = "fig/foxp3_cooccurprob_cont1.png",
+         #fig4 = "fig/foxp3_cooccurprob_cont1.png",
          #fig3 = "fig/foxp3_cooccurprob_case2.png",
          #fig5 = "fig/foxp3_cooccurprob_cont2.png",
          tabs = "fig/foxp3_cooccurprob_treg.tsv"
      conda: "scimilarity"
      script:
          "scripts/visualize_biomarker.py"
+
+
+rule foxp3_visualize_umap_allcells:
+     input:
+         case_h5ads = output_h5ad_seucells,
+     output:
+         fig1 = "fig/foxp3_umap_allcells.png",
+         fig2 = nenrich_figs,
+         tabs = "fig/foxp3_allcells_cooccurprob.tsv"
+     conda: "scimilarity"
+     script:
+         "scripts/visualize_biomarker_all.py"
 
 
 rule plot_foxp3_in_tcells:
@@ -75,6 +104,16 @@ rule plot_foxp3_in_tcells:
      conda: "r"
      script:
           "scripts/tidy_cooccur_tcells.R"
+
+
+rule plot_foxp3_in_pretcells:
+     input:
+          tabs = rules.foxp3_visualize_umap_allcells.output.tabs
+     output:
+          fig = "fig/allcell_cooccur_curve.pdf"
+     conda: "r"
+     script:
+          "scripts/tidy_cooccur_allcells.R"
 
 
 rule Treg_analysis:
@@ -89,8 +128,7 @@ rule Treg_analysis:
 
 rule cxcl_visualize_spatial:
      input:
-          case_h5ads = output_h5ad1,
-          cont_h5ads = output_h5ad2
+          case_h5ads = output_h5ad,
      output:
           fig = "fig/cxcl_spatial.png"
      conda: "scimilarity"
@@ -100,12 +138,14 @@ rule cxcl_visualize_spatial:
 
 rule all:
      input:
-         output_h5ad1, output_h5ad2, 
-         output_h5ad1_Tcells,
+         output_h5ad,
+         output_h5ad_Tcells,
          ###output_fig_dpt2,
-
-         "fig/cxcl_spatial.png", 
+         rules.cxcl_visualize_spatial.output,
          rules.foxp3_visualize_umap.output,
+         rules.foxp3_visualize_umap_allcells.output,
          rules.plot_foxp3_in_tcells.output,
+         rules.plot_foxp3_in_pretcells.output,
+         output_h5ad_seucells
      default_target: True
 

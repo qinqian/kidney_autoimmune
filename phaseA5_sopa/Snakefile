@@ -1,0 +1,71 @@
+bio    = ['ICI-AKI', 'ICI-AKI', 'ATN', 'ATN', 'ATN', 'ICI-AKI', 'ICI-AKI', 'ATN']
+labels = ['case', 'case', 'control', 'control', 'control', 'case', 'case', 'control']
+groups = ['20241025__200743__BWH_20241025_SHRUTI_RACHEL', '20241025__200743__BWH_20241025_SHRUTI_RACHEL',
+          '20241025__200743__BWH_20241025_SHRUTI_RACHEL', '20241025__200743__BWH_20241025_SHRUTI_RACHEL',
+          '20240803__182820__BWH_20240803_skin_Shruti_kidney', '20240803__182820__BWH_20240803_skin_Shruti_kidney',
+          '20240803__182820__BWH_20240803_skin_Shruti_kidney', '20240803__182820__BWH_20240803_skin_Shruti_kidney']
+
+samples1 = ['output-XETG00392__0045655__BS21-N65682A2__20241025__201009',	
+            'output-XETG00392__0045655__BS22-T41795A1__20241025__201009', 
+            'output-XETG00392__0045655__BS24-M35359A1__20241025__201009',
+            'output-XETG00392__0045655__BS24-R31519A2__20241025__201009']
+samples2 = ['output-XETG00150__0018462__BS22_12012A1__20240803__183643',
+ 	        'output-XETG00150__0018462__BS23_49001A1__20240803__183643',
+            'output-XETG00150__0018462__BS23_52206A2__20240803__183643',
+	        'output-XETG00150__0018462__BS2_61615A1__20240803__183643']
+
+output_arr  = expand("../data/kidney/{group}/{sample}.zarr", zip, group=groups, sample=samples1+samples2)
+output_cellpose = expand("../data/kidney/{group}/{sample}_cellpose.zarr", zip, group=groups, sample=samples1+samples2)
+output_cellpose_baysor = expand("{group}/{sample}", zip, group=groups, sample=samples1+samples2)
+print(output_cellpose_baysor)
+print(output_arr)
+print(output_cellpose)
+
+
+wildcard_constraints:
+    group = "[A-Za-z0-9].*",
+    sample = "output.*"
+
+
+rule convert_xenium:
+    input:
+        case = "../data/kidney/{group}/{sample}"
+    output:
+        case = directory("../data/kidney/{group}/{sample}.zarr")
+    conda: "sopa"
+    shell:
+        """
+        sopa convert {input.case} --technology xenium
+        """
+
+
+rule seg:
+    input:
+        case = "../data/kidney/{group}/{sample}.zarr"
+    output:
+        case = directory("../data/kidney/{group}/{sample}_cellpose.zarr")
+    conda: "sopa"
+    threads: 2
+    shell:
+        """
+        cp -r {input.case} {output.case}
+        sopa patchify image {output.case} --patch-width-pixel 1200 --patch-overlap-pixel 50
+        export SOPA_PARALLELIZATION_BACKEND=dask && sopa segmentation cellpose {output.case} --channels DAPI --diameter 35 --min-area 2000
+        """
+
+
+rule seg_baysor:
+    input:
+        case = "../data/kidney/{group}/{sample}_cellpose.zarr"
+    output:
+        zarr = directory("{group}/{sample}")
+    conda: "sopa"
+    shell:
+        """
+        /PHShome/qq06/.conda/envs/sopa/bin/python3.1 run_sopa.py {input.case} {output.zarr}
+        """
+
+rule all:
+     input:
+         output_arr, output_cellpose, output_cellpose_baysor
+     default_target: True

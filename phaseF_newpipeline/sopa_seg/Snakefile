@@ -1,0 +1,736 @@
+import glob
+
+
+bio    = ['ICI-AKI', 'ICI-AKI', 'ATN', 'ATN', 'ATN', 'ICI-AKI', 'ICI-AKI', 'ATN']
+labels = ['case', 'case', 'control', 'control', 'control', 'case', 'case', 'control']
+groups = ['20241025__200743__BWH_20241025_SHRUTI_RACHEL', '20241025__200743__BWH_20241025_SHRUTI_RACHEL',
+          '20241025__200743__BWH_20241025_SHRUTI_RACHEL', '20241025__200743__BWH_20241025_SHRUTI_RACHEL',
+          '20240803__182820__BWH_20240803_skin_Shruti_kidney', '20240803__182820__BWH_20240803_skin_Shruti_kidney',
+          '20240803__182820__BWH_20240803_skin_Shruti_kidney', '20240803__182820__BWH_20240803_skin_Shruti_kidney']
+
+samples1 = ['output-XETG00392__0045655__BS21-N65682A2__20241025__201009',	
+            'output-XETG00392__0045655__BS22-T41795A1__20241025__201009', 
+            'output-XETG00392__0045655__BS24-M35359A1__20241025__201009',
+            'output-XETG00392__0045655__BS24-R31519A2__20241025__201009']
+samples2 = ['output-XETG00150__0018462__BS22_12012A1__20240803__183643',
+ 	        'output-XETG00150__0018462__BS23_49001A1__20240803__183643',
+            'output-XETG00150__0018462__BS23_52206A2__20240803__183643',
+	        'output-XETG00150__0018462__BS2_61615A1__20240803__183643']
+
+#samples = [os.path.basename(ap) for ap in glob.glob('../../data/Australia_samples/*') if (('AP' in ap or 'AMP' in ap or 'AN' in ap) and ('.' not in os.path.basename(ap)))]
+#print(samples)
+
+localrules: all
+
+cell_labels = ['Macrophage', 'T', 'B']
+
+rule all:
+    input:
+        meta_tsv = "kidney_metadata.tsv",
+
+        #per_simp_rds = expand("{group}_rds/{sample}_orig_seg.rds", zip, group=groups, sample=samples1+samples2),
+        #per_simp_tsv = expand("{group}_rds/{sample}_orig_seg_meta.tsv", zip, group=groups, sample=samples1+samples2),
+
+        simp_rds_shape = expand("{group}_shapes/{sample}_orig_seg.rds", zip, group=groups, sample=samples1+samples2),
+        simp_h5ad = expand("{group}_adata/{sample}_orig_seg.h5ad", zip, group=groups, sample=samples1+samples2),
+        agg_h5ad = "comb_h5ad/kidney_orig_seg_merged.h5ad",
+        converted_seurat = "comb_h5ad/kidney_orig_seg_merged.rds",
+        simp_rds = "group_all_qc/all_kidneycells_orig_seg_adddbl.rds",
+        qc_png = "qc/RA_orig_seg_qc.png",
+
+        #simp_rds = "qc/all_kidneycells_orig_seg_adddbl.rds",
+        #simp_rds_adddbl = expand("{group}_qc/{sample}_orig_seg_adddbl.rds", zip, group=groups, sample=samples1+samples2),
+
+        #agg_rds = "comb/RA_orig_seg.rds",
+        smat = "RA_mat_objs/RA_orig_seg_lognorm_singlet.rds",
+        dmat = "RA_mat_objs/RA_orig_seg_lognorm_dbl.rds",
+        dumap = "RA_mat_objs/umap.pdf",
+
+        norm_rds = "norm/RA_orig_seg_lognorm.rds",
+        norm_anndata = "norm/RA_orig_seg_lognorm.h5ad",
+        norm_rds_dbl = "norm/RA_dbl_orig_seg_lognorm.rds",
+        norm_rds_singlet = "norm/RA_singlet_orig_seg_lognorm.rds",
+
+        norm_anndata_kpmp = "reference/kpmp_sc_orig_seg_lognorm.h5ad",
+
+        # too slow for singleR
+        ###xen_sc_integrate = expand("RA_integrate_{cell_label}_singlet_merged_annotated_sc.rds", cell_label=cell_labels),
+        ###xen_sc_integrate_dbl = "RA_integrate_myeloid_dbl_merged_annotated_sc.rds",
+        individualcell_xen_sc_seu = "KPMP_xen_singlet_mergedsc_short.rds",
+        ####xen_sc_integrate_kpmp = "KPMP_integrate_singlet_merged_annotated_sc.rds"
+
+        xen_sc_integrate_kpmp = "kpmp/KPMP_integrate_singlet_merged_annotated_sc.rds",
+        xen_sc_integrate = "kpmp/res2_short_KPMP_integrate_singlet_merged_annotated_sc.rds",
+
+        xen_dimplot = "KPMP_integrate_singlet_dimplot.pdf",
+        xen_featureplot = "KPMP_integrate_singlet_markers.pdf",
+
+        nn_label = "output/KPMP_integrate_singlet_nn_labels.rds",
+        umap_nn_label = "output/KPMP_integrate_singlet_umapnn_labels_umap.rds",
+        umap_nn_label_pdf = "KPMP_integrate_singlet_umap_Rplots.pdf",
+        comp_label = "output/KPMP_integrate_singlet_comp_all_Rplots.pdf",
+        subtype_comp_label = "output/KPMP_integrate_singlet_comp_all_subtype_Rplots.pdf",
+
+        rds = expand("kpmp/kidney_{type}_newatlas_kidney.rds", type=['T', 'B', 'M']),
+
+        xen_sc_seu = "all_KPMP_xen_singlet_mergedsc_short.rds",
+        all_xen_sc_integrate_kpmp = "kpmp/all_KPMP_integrate_singlet_merged_annotated_sc.rds",
+        all_comp_label = "output/all_KPMP_integrate_singlet_comp_all_Rplots.pdf",
+
+        all_plot = "kpmp/all_kidney_M_Rplots_integrate_clusters.pdf", 
+        all_rds = "kpmp/all_kidney_M_newatlas_kidney.rds",
+        all_plot2 = "kpmp/all_kidney_T_Rplots_integrate_clusters.pdf", 
+        all_rds2 = "kpmp/all_kidney_T_newatlas_kidney.rds",
+    shell:
+        "echo succeed"
+
+
+
+rule extract_meta:
+    input:
+        rds = "/data/wei/qq06/xenium/data/miles/shapes_seur_kidney_v5.rds"
+    output:
+        meta_tsv = "kidney_metadata.tsv",
+        meta_qc = "kidney_qc.pdf"
+    params:
+        prefix = "kidney"
+    threads: 1
+    conda: "spatial"
+    shell:
+        """
+        Rscript ../../bin/fetch_meta_data.R --output {params.prefix} {input.rds}
+        """
+
+
+rule process_xenium_sopa:
+    input:
+        case = "../../phaseA5_sopa/{group}/{sample}"
+    output:
+        simp_h5ad = "{group}_adata/{sample}_orig_seg.h5ad",
+    threads: 1
+    conda: "sopa"
+    shell:
+        """
+        python ../../bin/extract_sopa.py -p {wildcards.group}_adata/{wildcards.sample} -d {input.case}
+        """
+
+rule agg_h5ad:
+    input:
+        simp_h5ad = expand("{group}_adata/{sample}_orig_seg.h5ad", zip, group=groups, sample=samples1+samples2)
+    output:
+        agg_rds = "comb_h5ad/kidney_orig_seg_merged.h5ad"
+    threads: 1
+    conda: "sopa"
+    shell:
+        """
+        python ../../bin/combine_sopa.py -p comb_h5ad/kidney -d {input.simp_h5ad}
+        """
+
+rule convert_to_seurat:
+    input:
+        norm_rds = "comb_h5ad/kidney_orig_seg_merged.h5ad"
+    output:
+        norm_anndata = "comb_h5ad/kidney_orig_seg_merged.rds"
+    params:
+        method = "lognorm"
+    threads: 1
+    conda: "scconverter"
+    shell:
+        """
+        Rscript  ../../bin/convert_adata_to_seurat.R {input.norm_rds} --output {output.norm_anndata}
+        """
+
+rule reprocess_individual_xenium_shapes:
+    input:
+        case = "../../data/kidney/{group}/{sample}"
+    output:
+    #20241025__200743__BWH_20241025_SHRUTI_RACHEL_shapes/output-XETG00392__0045655__BS21-N65682A2__20241025__201009_orig_seg.rds (missing locally, parent dir contents: )
+        simp_rds = "{group}_shapes/{sample}_orig_seg.rds",
+    threads: 1
+    conda: "spatial"
+    shell:
+        """
+        Rscript ../../../RA/bin/extract_xenium_shapes.R --output {wildcards.group}_shapes/{wildcards.sample} {input.case}
+        """
+
+rule find_doublet_allcells:
+    input:
+        simp_rds = "comb_h5ad/kidney_orig_seg_merged.rds"
+    output:
+        simp_rds = "group_all_qc/all_kidneycells_orig_seg_adddbl.rds"
+    threads: 1
+    conda: "dbl"
+    shell:
+        """
+        Rscript ../../bin/detect_dbl_convertedadata.R --group group_all --output all_kidneycells {input.simp_rds}
+        """
+
+rule find_doublet:
+    input:
+        simp_rds = "{group}_rds/{sample}_orig_seg.rds",
+    output:
+        simp_rds = "{group}_qc/{sample}_orig_seg_adddbl.rds"
+    threads: 1
+    conda: "dbl"
+    shell:
+        """
+        Rscript ../../bin/detect_dbl.R --group {wildcards.group} --output {wildcards.sample} {input.simp_rds}
+        """
+
+rule agg_rds:
+    input:
+        simp_rds = expand("{group}_qc/{sample}_orig_seg_adddbl.rds", zip, group=groups, sample=samples1+samples2)
+    output:
+        agg_rds = "comb/RA_orig_seg.rds"
+    threads: 1
+    conda: "spatial"
+    shell:
+        """
+        Rscript ../../bin/combine_xenium.R --output RA {input.simp_rds}
+        """
+
+rule qc_rds_sopa:
+    input:
+        agg_rds = "group_all_qc/all_kidneycells_orig_seg_adddbl.rds"
+    output:
+        qc_png = "qc/RA_orig_seg_qc.png"
+    threads: 1
+    conda: "spatial"
+    shell:
+        """
+        Rscript ../../bin/qc.R --output RA {input.agg_rds}
+        """
+
+rule normalize_rds_sopa:
+    input:
+        agg_rds = "group_all_qc/all_kidneycells_orig_seg_adddbl.rds"
+    output:
+        smat = "RA_mat_objs/RA_orig_seg_lognorm_singlet.rds",
+        dmat = "RA_mat_objs/RA_orig_seg_lognorm_dbl.rds",
+        dumap = "RA_mat_objs/umap.pdf",
+    params:
+        method = "lognorm"
+    threads: 1
+    conda: "spatial"
+    shell:
+        """
+        Rscript ../../bin/mat_operate_seurat.R --output RA --method lognorm {input.agg_rds}
+        """
+
+
+rule normalize_rds2:
+    input:
+        agg_rds = "group_all_qc/all_kidneycells_orig_seg_adddbl.rds"
+    output:
+        norm_rds = "norm/RA_orig_seg_lognorm.rds",
+    params:
+        method = "lognorm"
+    threads: 4
+    conda: "spatial"
+    shell:
+        """
+
+        Rscript ../../bin/normalize_xenium.R --output RA {input.agg_rds}
+
+        """
+
+rule normalize_rds2_singlet:
+    input:
+        smat = "RA_mat_objs/RA_orig_seg_lognorm_singlet.rds",
+    output:
+        norm_rds = "norm/RA_singlet_orig_seg_lognorm.rds"
+    params:
+        method = "lognorm"
+    threads: 1
+    conda: "spatial"
+    shell:
+        """
+        Rscript ../../bin/normalize_xenium.R --output RA_singlet {input.smat}
+        """
+
+rule normalize_rds2_dbl:
+    input:
+        dmat = "RA_mat_objs/RA_orig_seg_lognorm_dbl.rds",
+    output:
+        norm_rds = "norm/RA_dbl_orig_seg_lognorm.rds",
+    params:
+        method = "lognorm"
+    threads: 1
+    conda: "spatial"
+    shell:
+        """
+        Rscript ../../bin/normalize_xenium.R --output RA_dbl {input.dmat}
+        """
+
+rule convert_to_anndata:
+    input:
+        norm_rds = "norm/RA_orig_seg_lognorm.rds",
+    output:
+        norm_anndata = "norm/RA_orig_seg_lognorm.h5ad",
+    params:
+        method = "lognorm"
+    threads: 1
+    conda: "scconverter"
+    shell:
+        """
+        Rscript  ../../bin/convert_seurat_to_adata.R norm/RA_orig_seg_lognorm.rds --output norm/RA
+        """
+
+rule convert_to_anndata_amp2:
+    input:
+        amp2 = "0f95993d-1bbc-427e-8f5c-14ccf630ef26_KPMP_PREMIERE_SC_version1.5_ForExplorer_withRC.032624.rds",
+    output:
+        norm_anndata = "reference/kpmp_sc_orig_seg_lognorm.h5ad"
+    params:
+        method = "lognorm"
+    threads: 1
+    conda: "scconverter"
+    shell:
+        """
+        Rscript  ../../bin/convert_seurat_to_adata.R {input.amp2} --output reference/kpmp_sc
+        """
+
+
+# NOT possible
+# SOPA relabel the cell ids differ from the xenium cell ids
+for cell_file, cell_label, cell_type in zip(['../../data/so_myeloid.rds', '../../data/so_t_nk.rds', '../../data/so_b_plasma.rds'], ['Macrophage', 'T', 'B'], ['myeloid', 't_nk', 'b_plasma']):
+    rule:
+        name: f"subset_{cell_type}_amp2"
+        input:
+            amp2 = cell_file
+        output:
+            subset_seu = f"sub.ref.{cell_label}.rds",
+            subset_sc = f"RA_subset_{cell_label}.ref.rds"
+        conda: "spatial"
+        params: cell_label=cell_label
+        shell:
+            """
+            Rscript ../../bin/subset_cells.R  --output RA_subset_{params.cell_label} --cell {params.cell_label} {input.amp2}
+            """
+    
+    rule:
+        name: f"subset_{cell_type}_xenium"
+        input:
+            xen = rules.normalize_rds2_singlet.output.norm_rds,
+            meta_tsv = rules.extract_meta.output.meta_tsv
+        output:
+            subset_sc = f"RA_subset_{cell_label}_xen_singlet.rds"
+        conda: "spatial"
+        params: cell_label=cell_label
+        shell:
+            """
+            Rscript ../../bin/match_celltypes_sopa.R  --output RA_subset_{params.cell_label}_xen_singlet --meta {input.meta_tsv} --cell "{params.cell_label}"  {input.xen} 
+            """
+    
+    rule:
+        name: f"subset_{cell_type}_xenium_dbl"
+        input:
+            xen = rules.normalize_rds2_dbl.output.norm_rds,
+            meta_tsv = rules.extract_meta.output.meta_tsv
+        output:
+            subset_sc_dbl = f"RA_subset_{cell_label}_xen_dbl.rds"
+        conda: "spatial"
+        params: cell_label=cell_label
+        shell:
+            """
+            Rscript ../../bin/match_celltypes_sopa.R  --output RA_subset_{params.cell_label}_xen_dbl --meta {input.meta_tsv} --cell "{params.cell_label}" {input.xen} 
+            """
+    
+    rule:
+        name: f"{cell_type}_singleR_annot"
+        input:
+            xen = f"RA_subset_{cell_label}_xen_singlet.rds",
+            amp2 = f"sub.ref.{cell_label}.rds",
+        output:
+            xen_annot = f"RA_subset_{cell_label}_xen_singlet_singleR.rds",
+            xen_sc_seu = f"RA_subset_{cell_label}_xen_singlet_mergedsc.rds"
+        conda: "spatial"
+        threads: 24
+        params: cell_label=cell_label
+        shell:
+            """
+            Rscript ../../bin/run_singleR.R  --output RA_subset_{params.cell_label}_xen_singlet {input.amp2} {input.xen} 
+            """
+    
+    rule:
+        name: f"integrate_sc_xenium_singlet_{cell_label}"
+        input:
+            xen = f"RA_subset_{cell_label}_xen_singlet.rds",
+            amp2 = f"sub.ref.{cell_label}.rds",
+            xen_sc_seu = f"RA_subset_{cell_label}_xen_singlet_mergedsc.rds"
+        output:
+            xen_sc_integrate = f"RA_integrate_{cell_label}_singlet_merged_annotated_sc.rds"
+        conda: "spatial"
+        threads: 10
+        params: cell_label=cell_label
+        shell:
+            """
+            Rscript ../../bin/run_integration.R --output RA_integrate_{params.cell_label}_singlet {input.amp2} {input.xen} {input.xen_sc_seu}
+            """
+    
+   # rule singleR_annot_dbl:
+   #     input:
+   #         xen = rules.subset_myeloid_xenium_dbl.output.subset_sc_dbl,
+   #         amp2 = rules.subset_myeloid_amp2.output.subset_seu
+   #     output:
+   #         xen_annot = "RA_subset_myeloid_xen_dbl_singleR.rds",
+   #         xen_sc_seu = "RA_subset_myeloid_xen_dbl_mergedsc.rds"
+   #     conda: "spatial"
+   #     threads: 24
+   #     shell:
+   #         """
+   #         Rscript ../../bin/run_singleR.R  --output RA_subset_myeloid_xen_dbl {input.amp2} {input.xen} 
+   #         """
+   # 
+   # rule integrate_sc_xenium_dbl:
+   #     input:
+   #         xen = rules.subset_myeloid_xenium_dbl.output.subset_sc_dbl,
+   #         amp2 = rules.subset_myeloid_amp2.output.subset_seu,
+   #         xen_sc_seu = "RA_subset_myeloid_xen_dbl_mergedsc.rds"
+   #     output:
+   #         xen_sc_integrate = "RA_integrate_myeloid_dbl_merged_annotated_sc.rds"
+   #     conda: "spatial"
+   #     threads: 1
+   #     shell:
+   #         """
+   #         Rscript ../../bin/run_integration.R --output RA_integrate_myeloid_dbl {input.amp2} {input.xen} {input.xen_sc_seu}
+   #         """
+   # 
+
+rule singleR_annot_new_atlas_all:
+    input:
+        xen = "norm/RA_orig_seg_lognorm.rds",
+        amp2 = "0f95993d-1bbc-427e-8f5c-14ccf630ef26_KPMP_PREMIERE_SC_version1.5_ForExplorer_withRC.032624.rds",
+    output:
+        #xen_annot = "all_KPMP_xen_singlet_singleR.rds",
+        xen_sc_seu = "all_KPMP_xen_singlet_mergedsc_short.rds"
+    conda: "spatial"
+    threads: 14
+    shell:
+        """
+        Rscript ../../bin/run_singleR_newatlas.R --method noncluster --resolution 0 --celltype cell_type --output all_KPMP_xen_singlet {input.amp2} {input.xen} 
+        """
+
+rule integrate_sc_xenium_singlet_kpmp0_all:
+    input:
+        xen = "norm/RA_orig_seg_lognorm.rds",
+        amp2 = "0f95993d-1bbc-427e-8f5c-14ccf630ef26_KPMP_PREMIERE_SC_version1.5_ForExplorer_withRC.032624.rds",
+        xen_sc_seu = "all_KPMP_xen_singlet_mergedsc_short.rds"
+    output:
+        xen_sc_integrate = "kpmp/all_KPMP_integrate_singlet_merged_annotated_sc.rds"
+    conda: "spatial"
+    threads: 10
+    shell:
+        """
+        Rscript ../../bin/run_integration_newatlas.R --output all_KPMP_integrate_singlet {input.amp2} {input.xen} {input.xen_sc_seu}
+        """
+
+rule knn_sc_xenium_celltyping_kpmp0_all:
+    input:
+         merged = "kpmp/all_KPMP_integrate_singlet_merged_annotated_sc.rds"
+    output:
+         label = "output/all_KPMP_integrate_singlet_nn_labels.rds"
+    conda: "spatial"
+    threads: 1
+    shell:
+         """
+         Rscript ../../bin/run_nn_prediction.R --output all_KPMP_integrate_singlet {input.merged}
+         """
+
+rule knn_sc_xenium_celltyping_kpmp0_nn2_all:
+    input:
+         merged = "kpmp/all_KPMP_integrate_singlet_merged_annotated_sc.rds"
+    output:
+         label = "output/all_KPMP_integrate_singlet_umap_umapnn_labels_umap.rds",
+         pdf = "all_KPMP_integrate_singlet_umap_Rplots.pdf"
+    conda: "spatial"
+    threads: 1
+    shell:
+         """
+         Rscript ../../bin/run_nn_prediction_umap.R --output all_KPMP_integrate_singlet_umap {input.merged}
+         """
+
+rule comp_expression_all:
+    input:
+         singleR_label = "kpmp/all_KPMP_integrate_singlet_merged_annotated_sc.rds",
+         nn1_label = "output/all_KPMP_integrate_singlet_nn_labels.rds",
+         nn2_label = "output/all_KPMP_integrate_singlet_umap_umapnn_labels_umap.rds",
+
+         singleR_label2 = "../xen_seg/kpmp/KPMP_integrate_singlet_merged_annotated_sc.rds",
+         nn1_label2 = "../xen_seg/output/KPMP_integrate_singlet_nn_labels.rds",
+         nn2_label2 = "../xen_seg/output/KPMP_integrate_singlet_umap_umapnn_labels_umap.rds"
+    output:
+         label = "output/all_KPMP_integrate_singlet_comp_all_Rplots.pdf"
+    conda: "spatial"
+    threads: 1
+    shell:
+         """
+
+         Rscript ../../bin/run_pseudobulk_comp.R --output all_KPMP_integrate_singlet_comp_all {input.nn1_label} {input.nn2_label} {input.singleR_label} {input.nn1_label2} {input.nn2_label2} {input.singleR_label2}
+
+         """
+
+rule singleR_annot_new_atlas:
+    input:
+        xen = "RA_mat_objs/RA_orig_seg_lognorm_singlet.rds",
+        amp2 = "0f95993d-1bbc-427e-8f5c-14ccf630ef26_KPMP_PREMIERE_SC_version1.5_ForExplorer_withRC.032624.rds",
+    output:
+        #xen_annot = "KPMP_xen_singlet_singleR.rds",
+        xen_sc_seu = "KPMP_xen_singlet_mergedsc_short.rds"
+    conda: "spatial"
+    threads: 42
+    shell:
+        """
+        Rscript ../../bin/run_singleR_newatlas.R --method noncluster --resolution 0 --celltype cell_type --output KPMP_xen_singlet {input.amp2} {input.xen} 
+        """
+
+rule integrate_sc_xenium_singlet_kpmp0:
+    input:
+        xen = "RA_mat_objs/RA_orig_seg_lognorm_singlet.rds",
+        amp2 = "0f95993d-1bbc-427e-8f5c-14ccf630ef26_KPMP_PREMIERE_SC_version1.5_ForExplorer_withRC.032624.rds",
+        xen_sc_seu = "KPMP_xen_singlet_mergedsc_short.rds"
+    output:
+        xen_sc_integrate = "kpmp/KPMP_integrate_singlet_merged_annotated_sc.rds"
+    conda: "spatial"
+    threads: 10
+    shell:
+        """
+        Rscript ../../bin/run_integration_newatlas.R --output KPMP_integrate_singlet {input.amp2} {input.xen} {input.xen_sc_seu}
+        """
+
+
+rule knn_sc_xenium_celltyping_kpmp0:
+    input:
+         merged = "kpmp/KPMP_integrate_singlet_merged_annotated_sc.rds"
+    output:
+         label = "output/KPMP_integrate_singlet_nn_labels.rds"
+    conda: "spatial"
+    threads: 1
+    shell:
+         """
+         Rscript ../../bin/run_nn_prediction.R --output KPMP_integrate_singlet {input.merged}
+         """
+
+rule knn_sc_xenium_celltyping_kpmp0_nn2:
+    input:
+         merged = "kpmp/KPMP_integrate_singlet_merged_annotated_sc.rds"
+    output:
+         label = "output/KPMP_integrate_singlet_umap_umapnn_labels_umap.rds",
+         pdf = "KPMP_integrate_singlet_umap_Rplots.pdf"
+    conda: "spatial"
+    threads: 1
+    shell:
+         """
+         Rscript ../../bin/run_nn_prediction_umap.R --output KPMP_integrate_singlet_umap {input.merged}
+         """
+
+rule comp_expression:
+    input:
+         singleR_label = "kpmp/KPMP_integrate_singlet_merged_annotated_sc.rds",
+         nn1_label = "output/KPMP_integrate_singlet_nn_labels.rds",
+         nn2_label = "output/KPMP_integrate_singlet_umap_umapnn_labels_umap.rds",
+
+         singleR_label2 = "../xen_seg/kpmp/KPMP_integrate_singlet_merged_annotated_sc.rds",
+         nn1_label2 = "../xen_seg/output/KPMP_integrate_singlet_nn_labels.rds",
+         nn2_label2 = "../xen_seg/output/KPMP_integrate_singlet_umap_umapnn_labels_umap.rds"
+    output:
+         label = "output/KPMP_integrate_singlet_comp_all_Rplots.pdf"
+    conda: "spatial"
+    threads: 1
+    shell:
+         """
+
+         Rscript ../../bin/run_pseudobulk_comp.R --output KPMP_integrate_singlet_comp_all {input.nn1_label} {input.nn2_label} {input.singleR_label} {input.nn1_label2} {input.nn2_label2} {input.singleR_label2}
+
+         """
+
+
+rule comp_expression_subtype:
+    input:
+         nn1_label = "output/KPMP_integrate_singlet_nn_labels.rds",
+         nn2_label = "output/KPMP_integrate_singlet_umap_umapnn_labels_umap.rds",
+
+         nn1_label2 = "../xen_seg/output/KPMP_integrate_singlet_nn_labels.rds",
+         nn2_label2 = "../xen_seg/output/KPMP_integrate_singlet_umapnn_labels_umap.rds"
+    output:
+         label = "output/KPMP_integrate_singlet_comp_all_subtype_Rplots.pdf"
+    conda: "spatial"
+    threads: 1
+    shell:
+         """
+         Rscript ../../bin/run_pseudobulk_comp_subtype.R --output KPMP_integrate_singlet_comp_all_subtype {input.nn1_label} {input.nn2_label} {input.nn1_label2} {input.nn2_label2} 
+
+         """
+
+
+## embeddings and featureplot
+rule visualize_integration:
+    input:
+        xen_sc_integrate = "kpmp/KPMP_integrate_singlet_merged_annotated_sc.rds"
+    output:
+        dimplot = "KPMP_integrate_singlet_dimplot.pdf",
+        featureplot = "KPMP_integrate_singlet_markers.pdf"
+    conda: "spatial"
+    shell:
+        """
+        Rscript ../../bin/plot_markers.R --output KPMP_integrate_singlet {input.xen_sc_integrate}
+        """
+
+## visualize the heatmap 
+
+
+#rule tangram_cluster:
+#    input:
+#        norm_anndata = "norm/RA_orig_seg_lognorm.h5ad",
+#        norm_anndata_kpmp = "reference/kpmp_sc_orig_seg_lognorm.h5ad"
+#    output:
+#        integrate_kpmp = ""
+#    conda: "tangram"
+#    shell:
+#        """
+#        """
+
+#rule singleR_annot_new_atlas2:
+#    input:
+#        xen = "RA_mat_objs/RA_orig_seg_lognorm_singlet.rds",
+#        amp2 = "0f95993d-1bbc-427e-8f5c-14ccf630ef26_KPMP_PREMIERE_SC_version1.5_ForExplorer_withRC.032624.rds",
+#    output:
+#        xen_annot = "KPMP_xen_singlet_singleR.rds",
+#        xen_sc_seu = "KPMP_xen_singlet_mergedsc_short.rds",
+#        xen_sc_seu2 = "KPMP_xen_singlet_xenium_renorm_singleR.rds"
+#    conda: "spatial"
+#    threads: 15
+#    shell:
+#        """
+#
+#        Rscript ../../bin/run_singleR_newatlas.R --resolution 3.0 --method cluster --celltype celltype --output KPMP_xen_singlet {input.amp2} {input.xen} 
+#
+#        """
+#    
+#rule integrate_sc_xenium_singlet_kpmp2:
+#    input:
+#        xen = "RA_mat_objs/RA_orig_seg_lognorm_singlet.rds",
+#        amp2 = "0f95993d-1bbc-427e-8f5c-14ccf630ef26_KPMP_PREMIERE_SC_version1.5_ForExplorer_withRC.032624.rds",
+#        xen_sc_seu = "KPMP_xen_singlet_mergedsc_short.rds"
+#    output:
+#        xen_sc_integrate = "kpmp/KPMP_integrate_singlet_merged_annotated_sc.rds"
+#    conda: "spatial"
+#    threads: 10
+#    shell:
+#        """
+#        Rscript ../../bin/run_integration_newatlas.R --output KPMP_integrate_singlet {input.amp2} {input.xen} {input.xen_sc_seu}
+#        """
+
+rule singleR_annot_new_atlas3:
+    input:
+        xen = "RA_mat_objs/RA_orig_seg_lognorm_singlet.rds",
+        amp2 = "0f95993d-1bbc-427e-8f5c-14ccf630ef26_KPMP_PREMIERE_SC_version1.5_ForExplorer_withRC.032624.rds",
+    output:
+        xen_annot = "res2_short_KPMP_xen_singlet_singleR.rds",
+        xen_sc_seu = "res2_short_KPMP_xen_singlet_mergedsc_short.rds",
+        xen_sc_seu2 = "res2_short_KPMP_xen_singlet_xenium_renorm_singleR.rds"
+    conda: "spatial"
+    threads: 24
+    shell:
+        """
+
+        Rscript ../../bin/run_singleR_newatlas.R --resolution 2.0 --method cluster --celltype cell_type  --output res2_short_KPMP_xen_singlet {input.amp2} {input.xen} 
+
+        """
+
+
+rule integrate_sc_xenium_singlet_kpmp3:
+    input:
+        xen = "RA_mat_objs/RA_orig_seg_lognorm_singlet.rds",
+        amp2 = "0f95993d-1bbc-427e-8f5c-14ccf630ef26_KPMP_PREMIERE_SC_version1.5_ForExplorer_withRC.032624.rds",
+        xen_sc_seu = "res2_short_KPMP_xen_singlet_mergedsc_short.rds"
+    output:
+        xen_sc_integrate = "kpmp/res2_short_KPMP_integrate_singlet_merged_annotated_sc.rds"
+    conda: "spatial"
+    threads: 10
+    shell:
+        """
+        Rscript ../../bin/run_integration_newatlas.R --output res2_short_KPMP_integrate_singlet {input.amp2} {input.xen} {input.xen_sc_seu}
+        """
+
+
+
+
+rule subtyping_KPMP_T:
+    input: 
+        xen = "output/KPMP_integrate_singlet_umap_umapnn_labels_umap.rds"
+        # sopa seg
+        ### nn2_label = "output/KPMP_integrate_singlet_umapnn_labels_umap.rds",
+        # xen-seg
+        ### nn2_label2 = "../xen_seg/output/KPMP_integrate_singlet_umapnn_labels_umap.rds"
+    output:
+        plot = "kpmp/kidney_T_Rplots_integrate_clusters.pdf", 
+        rds = "kpmp/kidney_T_newatlas_kidney.rds"
+    conda: "spatial"
+    threads: 4
+    shell:
+        """
+
+        Rscript ../../bin/run_newatlas_nn.R --output kidney --celltypeB T --celltypeA "T cell|Natural Killer" --label T {input.xen}
+
+        """
+
+
+rule subtyping_KPMP_T_all:
+    input: 
+        xen = "output/all_KPMP_integrate_singlet_umap_umapnn_labels_umap.rds",
+    output:
+        plot = "kpmp/all_kidney_T_Rplots_integrate_clusters.pdf", 
+        rds = "kpmp/all_kidney_T_newatlas_kidney.rds"
+    conda: "spatial"
+    threads: 4
+    shell:
+        """
+        Rscript ../../bin/run_newatlas_nn.R --output all_kidney --celltypeB T --celltypeA "T cell|Natural Killer" --label T {input.xen}
+
+        """
+
+rule subtyping_KPMP_B:
+    input: 
+        xen = "output/KPMP_integrate_singlet_umap_umapnn_labels_umap.rds"
+    output:
+        plot = "kpmp/kidney_B_Rplots_integrate_clusters.pdf", 
+        rds = "kpmp/kidney_B_newatlas_kidney.rds"
+    conda: "spatial"
+    threads: 4
+    shell:
+        """
+        Rscript ../../bin/run_newatlas_nn.R --output kidney --celltypeB "B|plasma" --celltypeA "B cell|Plasma cell" --label B {input.xen}
+
+        """
+
+rule subtyping_KPMP_M:
+    input: 
+        xen = "output/KPMP_integrate_singlet_umap_umapnn_labels_umap.rds"
+    output:
+        plot = "kpmp/kidney_M_Rplots_integrate_clusters.pdf", 
+        rds = "kpmp/kidney_M_newatlas_kidney.rds"
+    conda: "spatial"
+    threads: 4
+    shell:
+        """
+
+        Rscript ../../bin/run_newatlas_nn.R --output kidney --celltypeB "Macrophage" --celltypeA "Mono|Macrophage|Mast Cell" --label M {input.xen}
+
+        """
+
+
+rule subtyping_KPMP_M_all:
+    input: 
+        xen = "output/all_KPMP_integrate_singlet_umap_umapnn_labels_umap.rds",
+    output:
+        plot = "kpmp/all_kidney_M_Rplots_integrate_clusters.pdf", 
+        rds = "kpmp/all_kidney_M_newatlas_kidney.rds"
+    conda: "spatial"
+    threads: 4
+    shell:
+        """
+
+        Rscript ../../bin/run_newatlas_nn.R --output kidney --celltypeB "Macrophage" --celltypeA "Mono|Macrophage|Mast Cell" --label M {input.xen}
+
+        """

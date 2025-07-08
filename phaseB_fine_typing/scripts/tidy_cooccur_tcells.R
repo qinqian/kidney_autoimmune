@@ -27,6 +27,7 @@ get_theme <- function(size=12, angle=0) {
 
 do_bar_chart <- function(input, out_path, threads, myparam) {
     data = read_tsv(input[['tabs']]) 
+    print(head(data))
     celltype <- data %>% select(celltype_hint2) %>% distinct() %>% pull()
 
     pdf(out_path[["fig"]], width=12, height=5)
