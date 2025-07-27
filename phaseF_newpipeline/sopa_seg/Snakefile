@@ -81,6 +81,18 @@ rule all:
         all_rds = "kpmp/all_kidney_M_newatlas_kidney.rds",
         all_plot2 = "kpmp/all_kidney_T_Rplots_integrate_clusters.pdf", 
         all_rds2 = "kpmp/all_kidney_T_newatlas_kidney.rds",
+
+        M_plot = "kpmp/all_kidney_M_Rplots_integrate_clusters.pdf", 
+        M_rds = "kpmp/all_kidney_M_newatlas_kidney.rds",
+        svg_plot = "Rplots_i.svg",
+        sopa_lineage_label_rds = "spatial_sopa_newlineagelabels.rds",
+        sopa_norm_anndata = "spatial_sopa_newlineagelabels.h5ad_orig_seg_lognorm.h5ad",
+
+        fig1_label = "fig/fig1_umapnn_dimplot1.pdf",
+        fig2_label = "fig/fig1_umapnn_dimplot2.pdf",
+        fig2_dot_label = "fig/fig1_umapnn_dotplot1.pdf",
+        fig2_dotplot_sc = "fig/fig1_umapnn_dotplot2.pdf",
+        all_norm_anndata = "output_h5ad/all_KPMP_umapnn_orig_seg_lognorm.h5ad"
     shell:
         "echo succeed"
 
@@ -452,9 +464,9 @@ rule knn_sc_xenium_celltyping_kpmp0_nn2_all:
 
 rule comp_expression_all:
     input:
+         nn2_label = "output/all_KPMP_integrate_singlet_umap_umapnn_labels_umap.rds",
          singleR_label = "kpmp/all_KPMP_integrate_singlet_merged_annotated_sc.rds",
          nn1_label = "output/all_KPMP_integrate_singlet_nn_labels.rds",
-         nn2_label = "output/all_KPMP_integrate_singlet_umap_umapnn_labels_umap.rds",
 
          singleR_label2 = "../xen_seg/kpmp/KPMP_integrate_singlet_merged_annotated_sc.rds",
          nn1_label2 = "../xen_seg/output/KPMP_integrate_singlet_nn_labels.rds",
@@ -465,10 +477,51 @@ rule comp_expression_all:
     threads: 1
     shell:
          """
-
          Rscript ../../bin/run_pseudobulk_comp.R --output all_KPMP_integrate_singlet_comp_all {input.nn1_label} {input.nn2_label} {input.singleR_label} {input.nn1_label2} {input.nn2_label2} {input.singleR_label2}
-
          """
+
+rule fig1_dimplot:
+    input:
+         nn2_label = "output/all_KPMP_integrate_singlet_umap_umapnn_labels_umap.rds"
+    output:
+        label = "fig/fig1_umapnn_dimplot1.pdf",
+        fig2_label = "fig/fig1_umapnn_dimplot2.pdf"
+    conda: "spatial"
+    threads: 1
+    shell:
+         """
+
+         Rscript ../../bin/plot_dim.R --output fig1_umapnn {input.nn2_label} 
+         """
+
+rule convert_to_h5d:
+    input:
+        rds = "output/all_KPMP_integrate_singlet_umap_umapnn_labels_umap.rds"
+    output:
+        norm_anndata = "output_h5ad/all_KPMP_umapnn_orig_seg_lognorm.h5ad"
+    params:
+        method = "lognorm"
+    threads: 1
+    conda: "scconverter"
+    shell:
+        """
+        Rscript  ../../bin/convert_seurat_to_adata.R {input.rds} --output output_h5ad/all_KPMP_umapnn
+        """
+
+rule fig1_dotplot:
+    input:
+        norm_anndata = "output_h5ad/all_KPMP_umapnn_orig_seg_lognorm.h5ad"
+    output:
+        dotplot_xen = "fig/fig1_umapnn_dotplot1.pdf",
+        dotplot_sc = "fig/fig1_umapnn_dotplot2.pdf"
+    conda: "scimilarity"
+    threads: 1
+    shell:
+        """
+        python ../../bin/dotplot.py  --h5ad {input.norm_anndata} --output {output.dotplot_xen} --output2 {output.dotplot_sc}
+
+        """
+
 
 rule singleR_annot_new_atlas:
     input:
@@ -731,6 +784,35 @@ rule subtyping_KPMP_M_all:
     shell:
         """
 
-        Rscript ../../bin/run_newatlas_nn.R --output kidney --celltypeB "Macrophage" --celltypeA "Mono|Macrophage|Mast Cell" --label M {input.xen}
+        Rscript ../../bin/run_newatlas_nn.R --output all_kidney --celltypeB "Macrophage" --celltypeA "Mono|Macrophage|Mast Cell" --label M {input.xen}
 
+        """
+
+rule donotneed_fig1_major_lineage:
+    input: 
+        xen = "../../data/miles/shapes_seur_kidney_v5.rds"
+    output:
+        svg_plot = "Rplots_i.svg",
+        rds = "spatial_sopa_newlineagelabels.rds",
+    conda: "spatial"
+    threads: 4
+    shell:
+        """
+
+        Rscript ../../bin/transfer_labels_de.R
+
+        """
+
+rule convert_to_h5d_spatial_sopa:
+    input:
+        rds = "spatial_sopa_newlineagelabels.rds",
+    output:
+        norm_anndata = "spatial_sopa_newlineagelabels.h5ad_orig_seg_lognorm.h5ad"
+    params:
+        method = "lognorm"
+    threads: 1
+    conda: "scconverter"
+    shell:
+        """
+        Rscript  ../../bin/convert_seurat_to_adata.R {input.rds} --output {output.norm_anndata}
         """
