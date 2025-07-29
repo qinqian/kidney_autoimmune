@@ -102,4 +102,5 @@ seurat.object <- AddModuleScore_UCell(data,
 
 pdf("Fig3b3.pdf", width=8, height=8)
 p2 <- FeaturePlot(seurat.object, reduction = "umap", features = names(signatures), split.by='condition')
+print(p2)
 dev.off()

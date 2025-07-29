@@ -61,8 +61,8 @@ ht <- Heatmap(
   ## annotation_name_gp = gpar(fontsize = 5),    # annotation label font size
   column_names_gp = gpar(fontsize = 6),
   heatmap_legend_param = list(
-    title_gp = gpar(fontsize = 5),
-    labels_gp = gpar(fontsize = 5),
+    title_gp = gpar(fontsize = 6),
+    labels_gp = gpar(fontsize = 6),
     direction = "horizontal"
   ),cluster_columns = FALSE,
   column_names_side = "top")
@@ -74,20 +74,23 @@ draw(ht, merge_legend = TRUE, heatmap_legend_side = "bottom",
 dev.off()
 
 
+imm.niche@meta.data$condition = factor(str_trim(imm.niche@meta.data$condition), levels=c("Control", "Case"))
+imm.niche@meta.data$condition_num = as.numeric(factor(str_trim(imm.niche@meta.data$condition), levels=c("Control", "Case")))
+
+
 library(sccomp)
 print(head(imm.niche))
 res = imm.niche |>
     sccomp_estimate(
       formula_composition = ~ condition,
-      sample = "sample_id", cell_group = "niche_label",
+      sample = "sample_id", cell_group = "niche_label_fine",
       cores = 2, verbose=FALSE
     )
 
 res = res |>  sccomp_test()
-pdf("Fig2e.pdf", height=9, width=5)
-
-ht_grob <- grid.grabExpr(draw(ht))
+pdf("Fig2e.pdf", height=9, width=4.5)
+ht_grob <- grid.grabExpr(draw(ht, merge_legend = TRUE, heatmap_legend_side = "bottom"))
 # 5. Arrange the two grobs
-grob_ggplot = ggplotGrob(res |>  plot_1D_intervals() + theme_bw(base_size=8) + ylab("Cell type"))
+grob_ggplot = ggplotGrob(res |>  plot_1D_intervals() + theme_bw(base_size=8) + theme(legend.position='bottom') + ylab("Cell type"))
 grid.arrange(ht_grob, grob_ggplot, ncol = 1)
 dev.off()

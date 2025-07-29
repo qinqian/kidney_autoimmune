@@ -46,71 +46,11 @@ source("https://raw.githubusercontent.com/kris-nader/sp-type/main/sp-type.R");
 obj.merge = readRDS("250721_cells_annotated_lennard.rds")
 orig.merge = readRDS("../phaseF_newpipeline/sopa_seg/output/all_KPMP_integrate_singlet_umap_umapnn_labels_umap.rds")
 
-
 table(orig.merge@meta.data$tech)
 
 meta = read.csv("~/shruti_meta_clean (3).csv")
 input_meta = meta[,c('slide_id', 'age', 'sex', 'case_ctrl', 'ICPi',  'malignancy', 'eGFR_base')] %>% arrange(case_ctrl)
 #tile_obj$condition = str_trim(meta[match(str_extract(as.character(obj.merge$sample_id), "(.*)__", group=1), meta$slide_id), 'case_ctrl'])
-
-test = obj.merge@meta.data %>% filter(tech=='xenium') %>% janitor::clean_names()
-test$condition = str_trim(meta[match(str_extract(as.character(subset(obj.merge, subset=tech=='xenium')$orig.ident), "__(BS.*A[1,2])__(2.+)", group=1), meta$slide_id), 'case_ctrl'])
-
-sample_ids = test %>% filter(tech=='xenium') %>% count(sample_ids, lennard_label) %>% group_by(sample_ids) %>% 
-    mutate(ratio = n/sum(n)) %>% select(-n) %>% pivot_wider(names_from=lennard_label, values_from=ratio, values_fill = 0) %>% ungroup() %>% select(sample_ids) %>% pull()
-sample_mat = as.matrix(test %>% filter(tech=='xenium') %>% count(sample_ids, lennard_label) %>% group_by(sample_ids) %>% 
-    mutate(ratio = n/sum(n)) %>% select(-n) %>% pivot_wider(names_from=lennard_label, values_from=ratio, values_fill = 0) %>% ungroup() %>% select(-sample_ids))
-rownames(sample_mat) = str_extract(as.character(sample_ids), "__(BS.*A[1,2])__(2.+)", group=1)
-
-my_sample_col <- data.frame(sample = str_trim(meta$case_ctrl))
-row.names(my_sample_col) <- meta$slide_id
-my_sample_col = my_sample_col[rownames(sample_mat), ,drop=F]
-my_sample_col = my_sample_col %>% mutate(patient=seq(1, 8))
-
-write_tsv(my_sample_col, "my_sample_col.tsv")
-
-
-sample_mat =  t(sample_mat)
-scaled_mat = t(scale(t(sample_mat)))
-colnames(scaled_mat) = my_sample_col$patient
-
-
-my_sample_col = my_sample_col %>% rownames_to_column()
-
-# # Define color function
-col_fun <- colorRamp2(c(-2, 0, 2), c("blue", "white", "red"))
-ht_opt("heatmap_row_names_gp" = gpar(fontsize = 5))
-ha1 = rowAnnotation(samples = my_sample_col$sample, 
-                    col=list(samples=c('Case'='white', 'Control'='black')),
-#                    annotation_label_location = "top",  # move label to top
-                    annotation_name_gp = gpar(fontsize = 5),  
-                    annotation_legend_param = list(
-                    samples = list(title_gp = gpar(fontsize = 5), labels_gp = gpar(fontsize = 5), direction = "horizontal")))
-
-
-rownames(scaled_mat)[rownames(scaled_mat)=='Immune Cell'] = 'Immune(Low Q)'
-
-# Main heatmap
-ht <- Heatmap(
-  t(scaled_mat),
-  name = "Expression",
-  col = col_fun,
-  ## annotation_name_gp = gpar(fontsize = 5),    # annotation label font size
-  column_names_gp = gpar(fontsize = 5),
-  heatmap_legend_param = list(
-    title_gp = gpar(fontsize = 5),
-    labels_gp = gpar(fontsize = 5),
-    direction = "horizontal"
-  ),cluster_columns = FALSE,
-  column_names_side = "top",
-  right_annotation = ha1)
-
-pdf("Fig1c.pdf", height=2.4, width=3)
-draw(ht, merge_legend = TRUE, heatmap_legend_side = "bottom", 
-    annotation_legend_side = "bottom")
-dev.off()
-
-
 
 obj.merge@meta.data$cell_label = gsub(" Cell", "", obj.merge@meta.data$lennard_label)
 obj.merge@meta.data = obj.merge@meta.data %>% mutate(cell_label = ifelse(cell_label=='Immune', 'Immune (LowQ)', cell_label))
@@ -119,14 +59,6 @@ axis <- ggh4x::guide_axis_truncated(
   trunc_lower = unit(0, "npc"),
   trunc_upper = unit(3, "cm")
 )
-
-pdf("Fig1b.pdf", height=5, width=6)
-DimPlot_scCustom(obj.merge, group.by="cell_label", label=T, repel=T, seed=99, label.box=T)+ggplot2::theme(legend.position = "none",         axis.line = element_line(arrow = arrow(type = "closed", length = unit(10, 'pt'))))+
-    guides(x = axis, y = axis)+
-    scale_x_continuous(breaks = NULL) +
-    scale_y_continuous(breaks = NULL) +
-    xlab("UMAP1")+ylab("UMAP2")
-dev.off()
 
 
 ## obj.merge@meta.data  = obj.merge@meta.data %>% mutate(sample_id=str_extract(sample, "__(BS\\d*[_-].*)__2024", group=1)) %>% left_join(input_meta, by=c("sample_id" = "slide_id"))
@@ -164,7 +96,7 @@ length(setdiff(ident_cells, main_cells))
 
 orig.merge.xen@meta.data  = orig.merge.xen@meta.data %>% mutate(sample_id=str_extract(sample, "__(BS\\d*[_-].*)__2024", group=1)) 
 orig.merge.xen@meta.data  = orig.merge.xen@meta.data %>% mutate(case_ctrl=input_meta[match(sample_id, input_meta$slide_id), 'case_ctrl'])
-orig.merge.xen@meta.data$case_ctrl_num = as.numeric(factor(orig.merge.xen@meta.data$case_ctrl))
+orig.merge.xen@meta.data$case_ctrl_num = as.numeric(factor(str_trim(orig.merge.xen@meta.data$case_ctrl), levels=c("Control", "Case")))
 
 print('---------')
 main_cells <- colnames(orig.merge.xen)
@@ -209,15 +141,19 @@ names(obj.cna@reductions$cna@misc)
 ##         title = 'CNA disease association', color = 'Correlation',
 ##         subtitle = sprintf('global p=%0.3f', obj.cna@reductions$cna@misc$p)
 ##     ) + 
-pdf("Fig1d.pdf", height=5, width=6)
-FeaturePlot_scCustom(obj.cna, features = c('cna_ncorrs_fdr10'))[[1]] + 
-    scale_color_gradient2_tableau() + 
+pdf("Fig1d.pdf", height=9.5, width=6)
+p1=DimPlot_scCustom(obj.merge, group.by="cell_label", label=T, repel=T, seed=99, label.box=T)+ggplot2::theme(legend.position = "none",         axis.line = element_line(arrow = arrow(type = "closed", length = unit(10, 'pt'))))+
+    guides(x = axis, y = axis)+
+    scale_x_continuous(breaks = NULL) +
+    scale_y_continuous(breaks = NULL) +
+    xlab("UMAP1")+ylab("UMAP2")
+p2=FeaturePlot_scCustom(obj.cna, features = c('cna_ncorrs_fdr10'))[[1]] + 
+    scale_color_gradient2(high = "#de2d26", mid = "white", low = "#2c7fb8", midpoint = 0)+
     labs(title = 'CNA disease association', subtitle = 'Filtered for FDR<0.10', color = 'Correlation')+
     guides(x = axis, y = axis)+
     scale_x_continuous(breaks = NULL) +
     scale_y_continuous(breaks = NULL) +
     xlab("UMAP1")+ylab("UMAP2")+ggplot2::theme(legend.position = "right", axis.line = element_line(arrow = arrow(type = "closed", length = unit(10, 'pt'))))
+print(p1/p2)
 dev.off()
 
-print(my_sample_col)
-write_tsv(my_sample_col, "my_sample_col.tsv")

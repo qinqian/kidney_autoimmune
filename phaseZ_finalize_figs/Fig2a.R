@@ -57,6 +57,9 @@ patient <- read_tsv("my_sample_col.tsv")
 
 set.seed(999)
 library(glue)
+imm.niche@meta.data$condition_num = as.numeric(factor(str_trim(imm.niche@meta.data$condition), levels=c("Control", "Case")))
+
+
 obj.cna <- association.Seurat(
     ## seurat_object = obj.merge, # somehow lennard's object cannot work, perhaps version of seurat while saving
     seurat_object = imm.niche,
@@ -75,16 +78,25 @@ markers = c("TNXB", "COL5A1", "PDGFRA",
             "CALB1", "HSD11B2", "SCNN1G",
             "NOTCH3", "CSPG4", "MCAM",
             "HAVCR1", "CDH6", "SOX9",
-            "PLA2R1", "PODXL", "WT1"
-            )
+            "PLA2R1", "PODXL", "WT1")
+
+names(markers) <- c("Fib", "Fib", "Fib",
+                    "Immune", "Immune", "Immune",
+                    "TAL", "TAL", "TAL",
+                    "PT", "PT", "PT",
+                    "C-Duct", "C-Duct", "C-Duct",
+                    "Vessel", "Vessel", "Vessel",
+                    "I-PT", "I-PT", "I-PT",
+                    "Gl", "Gl", "Gl"
+                    )
+
 axis <- ggh4x::guide_axis_truncated(
   trunc_lower = unit(0, "npc"),
   trunc_upper = unit(1, "cm")
 )
 
 print('------')
-
-p2 = DotPlot(subset(imm.niche, subset=niche_label != 'Skeletal Muscle'), features=markers, group.by='niche_label') + theme(axis.text.x=element_text(face="bold", angle=90, hjust = 1, vjust=1), axis.text.y=element_text(face="bold")) + xlab("") + ylab("") + get_theme(angle=90, size=5) + theme(legend.box="vertical", legend.margin=margin(), plot.margin = unit(c(0,0,0,0), "cm"), ) + scale_size_continuous(range = c(0.1, 2)) +ggtitle("")
+p2 = DotPlot_scCustom(subset(imm.niche, subset=niche_label != 'Skeletal Muscle'), features=markers, group.by='niche_label') + theme(axis.text.x=element_text(face="bold", angle=90, hjust = 1, vjust=1), axis.text.y=element_text(face="bold")) + xlab("") + ylab("") + get_theme(angle=90, size=5) + theme(legend.box="vertical", legend.margin=margin(), plot.margin = unit(c(0,0,0,0), "cm"), ) + scale_size_continuous(range = c(0.1, 2)) +ggtitle("")
 
 p1 = DimPlot_scCustom(subset(imm.niche, subset=niche_label != 'Skeletal Muscle'), group.by='niche_label', label.size=2, label=T, repel=T, seed=99, label.box=T, raster=F)+ggplot2::theme(plot.margin = unit(c(0,0,0,0), "cm"), legend.text=element_text(size=8), legend.position = "none", axis.line = element_line(arrow = arrow(type = "closed", length = unit(3, 'pt'))))+
     guides(x = axis, y = axis)+
@@ -92,12 +104,12 @@ p1 = DimPlot_scCustom(subset(imm.niche, subset=niche_label != 'Skeletal Muscle')
     scale_y_continuous(breaks = NULL) + ggtitle("") + xlab("UMAP 1") + ylab("UMAP 2")
 
 p3 <- FeaturePlot_scCustom(obj.cna, raster=F, features = c('cna_ncorrs_fdr10'))[[1]] + 
-    scale_color_gradient2_tableau() + 
+    scale_color_gradient2(high = "#de2d26", mid = "white", low = "#2c7fb8", midpoint = 0)+
     guides(x = axis, y = axis)+
     scale_x_continuous(breaks = NULL) +
     scale_y_continuous(breaks = NULL) + ggtitle("") + xlab("UMAP 1") + ylab("UMAP 2")+theme(plot.margin = unit(c(0,0,0,0), "cm"), axis.line = element_line(arrow = arrow(type = "closed", length = unit(3, 'pt'))), legend.text=element_text(size=6), legend.position="bottom", legend.direction="horizontal") 
 
 pdf("Fig2a.pdf", height=4, width=10.5)
-print(p1 +p3 + p2 + plot_layout(width=c(1.6, 1.6, 1.2), ncol=3)) 
+print(p1 +p3 + p2 + plot_layout(width=c(1.6, 1.6, 1.8), ncol=3)) 
 dev.off()
 
