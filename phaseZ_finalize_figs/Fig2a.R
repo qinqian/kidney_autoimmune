@@ -109,7 +109,8 @@ p3 <- FeaturePlot_scCustom(obj.cna, raster=F, features = c('cna_ncorrs_fdr10'))[
     scale_x_continuous(breaks = NULL) +
     scale_y_continuous(breaks = NULL) + ggtitle("") + xlab("UMAP 1") + ylab("UMAP 2")+theme(plot.margin = unit(c(0,0,0,0), "cm"), axis.line = element_line(arrow = arrow(type = "closed", length = unit(3, 'pt'))), legend.text=element_text(size=6), legend.position="bottom", legend.direction="horizontal") 
 
-pdf("Fig2a.pdf", height=4, width=10.5)
-print(p1 +p3 + p2 + plot_layout(width=c(1.6, 1.6, 1.8), ncol=3)) 
+pdf("Fig2a.pdf", height=8, width=6.5)
+#print(p1 +p3 + p2 + plot_layout(width=c(1.6, 1.6, 1.8), ncol=3)) 
+print(p1 / p3 + plot_layout(width=c(1.6, 1.6, 1.8), ncol=1))
 dev.off()
 

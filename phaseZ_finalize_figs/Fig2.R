@@ -33,7 +33,6 @@ get_theme <- function(size=12, angle=45) {
 
 
 sc.niche <- readRDS("../phaseF_newpipeline/sopa_seg/sopa_baysor_tessera.rds")
-print(str(sc.niche))
 
 lennard.subtype <- readRDS("250721_cells_annotated_lennard.rds")
 
@@ -77,20 +76,24 @@ dev.off()
 imm.niche@meta.data$condition = factor(str_trim(imm.niche@meta.data$condition), levels=c("Control", "Case"))
 imm.niche@meta.data$condition_num = as.numeric(factor(str_trim(imm.niche@meta.data$condition), levels=c("Control", "Case")))
 
+(colnames(imm.niche@meta.data))
+imm.niche@meta.data = imm.niche@meta.data %>% mutate(niche_label2 = ifelse(niche_label == 'Immune', niche_label_fine, niche_label))
+
 
 library(sccomp)
-print(head(imm.niche))
+
 res = imm.niche |>
     sccomp_estimate(
       formula_composition = ~ condition,
-      sample = "sample_id", cell_group = "niche_label_fine",
+      #sample = "sample_id", cell_group = "niche_label_fine",
+      .sample = sample_id, .cell_group = niche_label2,
       cores = 2, verbose=FALSE
     )
 
 res = res |>  sccomp_test()
-pdf("Fig2e.pdf", height=9, width=4.5)
-ht_grob <- grid.grabExpr(draw(ht, merge_legend = TRUE, heatmap_legend_side = "bottom"))
-# 5. Arrange the two grobs
-grob_ggplot = ggplotGrob(res |>  plot_1D_intervals() + theme_bw(base_size=8) + theme(legend.position='bottom') + ylab("Cell type"))
-grid.arrange(ht_grob, grob_ggplot, ncol = 1)
+pdf("Fig2e.pdf", height=6.5, width=4.2)
+#ht_grob <- grid.grabExpr(draw(ht, merge_legend = TRUE, heatmap_legend_side = "bottom"))
+## 5. Arrange the two grobs
+print(res |>  plot_1D_intervals() + theme_bw(base_size=8) + theme(legend.position='bottom') + ylab("Cell type"))
+#grid.arrange(ht_grob, grob_ggplot, ncol = 1)
 dev.off()

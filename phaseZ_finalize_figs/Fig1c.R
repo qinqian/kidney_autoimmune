@@ -53,14 +53,14 @@ obj.merge@meta.data$case_ctrl = factor(str_trim(obj.merge@meta.data$case_ctrl), 
 res = obj.merge |>
     sccomp_estimate(
       formula_composition = ~ case_ctrl,
-      sample = "sample_id", cell_group = "cell_label",
-      cores = 2, verbose=FALSE
+      .sample = sample_id, .cell_group = cell_label,
+      cores = 1, verbose=FALSE
     )
 
 res = res |>  sccomp_test()
 
 pdf("Fig1e.pdf", height=5, width=4.6)
-p <- (res |>  plot_1D_intervals(show_fdr_message=F)) + theme_bw(base_size=8) + theme(legend.position="bottom") + ylab("Cell type")
+p <- (res |>  plot_1D_intervals()) + theme_bw(base_size=8) + theme(legend.position="bottom") + ylab("Cell type")
 print(p)
 dev.off()
 

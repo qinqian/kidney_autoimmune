@@ -1,0 +1,46 @@
+rule all:
+    input:
+        "Fig2a.pdf",
+        "Fig2e.pdf",
+        "Fig2b.pdf",
+
+
+rule plot_Fig2e:
+    input: 
+        a = '../phaseF_newpipeline/sopa_seg/sopa_baysor_tessera.rds',
+        b = '250721_cells_annotated_lennard.rds'
+    conda: 'despace2_latest'
+    output:
+        pdf = "Fig2e.pdf"
+    shell: 
+        """
+        module load gcc
+        Rscript Fig2.R
+
+        """
+
+
+rule plot_Fig2a:
+    input: 
+        a = '../phaseF_newpipeline/sopa_seg/sopa_baysor_tessera.rds',
+        b = '250721_cells_annotated_lennard.rds'
+    conda: 'tessera_env'
+    output:
+        pdf = "Fig2a.pdf"
+    shell: 
+        """
+        Rscript Fig2a.R
+        """
+
+
+rule plot_Fig2b:
+    input: 
+        a = '../phaseF_newpipeline/sopa_seg/sopa_baysor_tessera.rds',
+        b = '250721_cells_annotated_lennard.rds'
+    conda: 'tessera_env'
+    output:
+        pdf = "Fig2b.pdf"
+    shell: 
+        """
+        Rscript Fig2b.R
+        """
