@@ -3,6 +3,7 @@ suppressPackageStartupMessages({
     library(scCustomize)
     library(spatula)
     library(ComplexHeatmap)
+    library(circlize)
     library(rcna)
     library(circlize)
     library(ggrastr)
@@ -86,15 +87,15 @@ niche_cols = c(
 )
 
 
-sc.niche <- readRDS("../phaseF_newpipeline/sopa_seg/sopa_baysor_tessera.rds")
-lennard.subtype <- readRDS("../phaseZ_finalize_figs/250721_cells_annotated_lennard.rds")
-imm.niche <- readRDS("../phaseZ_finalize_figs/250711_niches.rds")
+sc.niche <- readRDS("sopa_baysor_tessera.rds")
+lennard.subtype <- readRDS("250721_cells_annotated_lennard.rds")
+imm.niche <- readRDS("250711_niches.rds")
 
 niche.merge = imm.niche 
 obj.merge = lennard.subtype
-orig.merge = readRDS("../phaseF_newpipeline/sopa_seg/output/all_KPMP_integrate_singlet_umap_umapnn_labels_umap.rds")
+orig.merge = readRDS("all_KPMP_integrate_singlet_umap_umapnn_labels_umap.rds")
 
-meta = read.csv("~/shruti_meta_clean (3).csv")
+meta = read.csv("shruti_meta_clean (3).csv")
 input_meta = meta[,c('slide_id', 'age', 'sex', 'case_ctrl', 'ICPi',  'malignancy', 'eGFR_base')] %>% arrange(case_ctrl)
 
 cells_to_keep <- colnames(orig.merge)[orig.merge$tech=='xenium']
@@ -134,7 +135,8 @@ obj.merge@meta.data$cell_label = gsub(" Cell", "", obj.merge@meta.data$lennard_l
 obj.merge@meta.data = obj.merge@meta.data %>% mutate(cell_label = ifelse(cell_label=='Immune', 'Immune (LowQ)', cell_label))
 
 
-orig.baysor <- readRDS("../phaseF_newpipeline/sopa_seg/comb_h5ad/kidney_orig_seg_merged.rds")
+#orig.baysor <- readRDS("../phaseF_newpipeline/sopa_seg/comb_h5ad/kidney_orig_seg_merged.rds")
+orig.baysor <- readRDS("kidney_orig_seg_merged.rds")
 orig.baysor@meta.data <- orig.baysor@meta.data%>%unite("uniq_id", c(sample, cell_id), remove=F)
 lennard.subtype@meta.data <- lennard.subtype@meta.data%>%unite("uniq_id", c(sample, cell_id), remove=F)
 xy <- Embeddings(orig.baysor, 'spatial')[match(lennard.subtype@meta.data$uniq_id, orig.baysor@meta.data$uniq_id),]
@@ -166,10 +168,10 @@ names(markers) <- c(
                     )
 
 
-axis <- ggh4x::guide_axis_truncated(
-  trunc_lower = unit(0, "npc"),
-  trunc_upper = unit(1, "cm")
-)
+## axis <- ggh4x::guide_axis_truncated(
+##   trunc_lower = unit(0, "npc"),
+##   trunc_upper = unit(1, "cm")
+## )
 
 print('------')
 p2 = DotPlot_scCustom(subset(imm.niche, subset=niche_label != 'Skeletal Muscle'), features=unname(markers), group.by='niche_label') + 
