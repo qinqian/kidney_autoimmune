@@ -90,6 +90,10 @@ res = imm.niche |>
       cores = 2, verbose=FALSE
     )
 
+library(tidyverse)
+saveRDS(res, "sccomp_obj.rds")
+saveRDS(res |>  plot_1D_intervals(), "sccomp_ggplot2.rds")
+
 res = res |>  sccomp_test()
 pdf("Fig2e.pdf", height=6.5, width=4.2)
 #ht_grob <- grid.grabExpr(draw(ht, merge_legend = TRUE, heatmap_legend_side = "bottom"))

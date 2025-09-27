@@ -1,9 +1,8 @@
 suppressPackageStartupMessages({
-
     library(Seurat)
-library(scCustomize)
-library(spatula)
-library(ComplexHeatmap)
+    library(scCustomize)
+    library(spatula)
+    library(ComplexHeatmap)
     library(rcna)
     library(circlize)
     library(ggrastr)
@@ -11,8 +10,7 @@ library(ComplexHeatmap)
     library(scico)
     library(circlize)    
     library(ggsci)
-    })
-
+})
 library(ggrastr)
 
 get_theme <- function(size=12, angle=45) {
@@ -70,7 +68,7 @@ niche_cols = c(
   "Immune"              = "#6a51a3",  # medium-deep purple
 
   # Myeloid / Skeletal Muscle (yellows/oranges)
-  "Skeletal Muscle"      = "#fdcc8a",  # warm orange-yellow
+  #"Skeletal Muscle"      = "#fdcc8a",  # warm orange-yellow
 
   # Endothelial / Fibrosis (blues)
   "Fibrosis & Interstitium" = "#6baed6",  # light sky blue
@@ -84,7 +82,7 @@ niche_cols = c(
   "Collecting Duct"          = "#67000d",  # very dark red
 
   # Duct / Specialized (violet)
-  "Glomerulus" = "#756bb1"  # violet (distinct from immune purple)
+  "Glomerulus" = "#fdcc8a"  # violet (distinct from immune purple)
 )
 
 
@@ -174,7 +172,7 @@ axis <- ggh4x::guide_axis_truncated(
 )
 
 print('------')
-p2 = DotPlot_scCustom(subset(imm.niche, subset=niche_label != 'Skeletal Muscle'), features=markers, group.by='niche_label') + 
+p2 = DotPlot_scCustom(subset(imm.niche, subset=niche_label != 'Skeletal Muscle'), features=unname(markers), group.by='niche_label') + 
     theme(axis.text.x=element_text(face="bold", angle=90, hjust = 1, vjust=1), axis.text.y=element_text(face="bold")) + xlab("") + ylab("") + get_theme(angle=90, size=12) + theme(legend.box="vertical", legend.margin=margin(), plot.margin = unit(c(0,0,0,0), "cm"), ) + scale_size_continuous(range = c(0.1, 2)) +ggtitle("")
 
 fig.size(8, 13)
@@ -195,10 +193,12 @@ niche.cna <- association.Seurat(
     #covs = c("age", "sex", "ICPi") ## no covariates to include
 )
 
-p3=FeaturePlot_scCustom(niche.cna, features = c('cna_ncorrs_fdr10'), raster=T)[[1]] + #
+
+
+p3=FeaturePlot_scCustom(niche.cna, features = c('cna_ncorrs_fdr10'), raster=T, raster.dpi=c(150, 150))[[1]] + #
     scale_color_gradient2(high = "#de2d26", mid = "white", low = "#2c7fb8", midpoint = 0,  guide = guide_colorbar(direction = "vertical"))+
-    labs(title = 'CNA disease association', subtitle = 'Filtered for FDR<0.10', color = 'Correlation')+ ggplot2::theme(legend.position = "right") #+ggtitle("CNA") + theme(legend.position='bottom')
-fig2b = p3
+    labs(title = 'ICI-AIN-associated niches', subtitle = 'Filtered for FDR<0.10', color = 'Correlation')+ ggplot2::theme(legend.position = "right")
+fig2e = p3
 
 sc.niche$obj@meta.data = sc.niche$obj@meta.data %>% mutate(lennard_label=lennard.subtype@meta.data$lennard_label)
 sc.niche$obj@meta.data = sc.niche$obj@meta.data %>% mutate(tile_label = imm.niche@meta.data[match(sc.niche$obj@meta.data$tile_id, rownames(imm.niche@meta.data)), 'niche_label'])
@@ -248,8 +248,9 @@ ht_plot <- wrap_elements(full=grid.grabExpr(draw(fig1f,
                               merge_legend = TRUE, heatmap_legend_side = "top",
                               annotation_legend_list = NULL)))
 
-fig2b1 = DimPlot_scCustom(subset(niche.merge, subset = condition == 'Case'), group.by='niche_label') + scale_color_manual(values=niche_cols) + ggtitle("ICI-AIN")
-fig2b2 = DimPlot_scCustom(subset(niche.merge, subset = condition == 'Control'), group.by='niche_label') + scale_color_manual(values=niche_cols) + ggtitle("ICI-ATN")
+#fig2b1 = DimPlot_scCustom(subset(niche.merge, subset = condition == 'Case'), group.by='niche_label') + scale_color_manual(values=niche_cols) + ggtitle("ICI-AIN")
+#fig2b2 = DimPlot_scCustom(subset(niche.merge, subset = condition == 'Control'), group.by='niche_label') + scale_color_manual(values=niche_cols) + ggtitle("ICI-ATN")
+fig2b = DimPlot_scCustom(niche.merge, group.by='niche_label', raster.dpi=c(150, 150), raster=T) + scale_color_manual(values=niche_cols)
 
 library(patchwork)
 #pa_d <- p0 + p1 + fig2b + ht_plot + plot_layout(ncol=4, guides='collect') & theme(legend.position='bottom')
@@ -264,16 +265,16 @@ cont2 <- "BS2_61615A1"
 
 library(tidyverse)
 p20 = ggplot() +
-    geom_sf(data = as_tibble(imm.niche@meta.data, niche_label=imm.niche$niche_label_fine)%>% filter(patient_id==case1),
-            aes(geometry = shape, fill = niche_label), color = 'lightgray') + theme_bw(base_size=12) + scale_fill_manual(values=niche_cols)+ theme(legend.position = 'none')+
-    coord_sf(xlim=c(1000, 4000), ylim=c(1000, 2500), expand = FALSE)
+    rasterise(geom_sf(data = as_tibble(imm.niche@meta.data, niche_label=imm.niche$niche_label_fine)%>% filter(patient_id==case1),
+            aes(geometry = shape, fill = niche_label), color = NA), dpi=100) + theme_bw(base_size=12) + scale_fill_manual(values=niche_cols)+ theme(legend.position = 'none')+
+    coord_sf(xlim=c(1000, 4000), ylim=c(1000, 2500), expand = FALSE) + ggtitle("ICI-AIN case patient 1 niche tiles")
 
 
 fig2c = p20
 
 
 fig.size(15, 20)
-((fig2b1 + fig2b2 + plot_layout(ncol=2, guides='collect') & theme(legend.position='none')) | ht_plot) / (fig2b |  fig2a) + 
+((fig2b + plot_layout(ncol=2, guides='collect') & theme(legend.position='none')) | ht_plot) / (fig2b |  fig2a) + 
  plot_annotation(
     tag_levels = list(c("A", "B", "C", "D", "E")), 
  ) &  theme(plot.tag = element_text(face = "bold", size = 28))
@@ -282,36 +283,107 @@ ggsave('Fig2_part1.pdf', width=20, height=13)
 
 library(tidyverse)
 p10 = ggplot() +
-    geom_sf(data = as_tibble(imm.niche@meta.data, niche_label=imm.niche$niche_label_fine)%>% filter(patient_id==cont1),
-            aes(geometry = shape, fill = niche_label), color = 'lightgray') + theme_bw(base_size=12) + scale_fill_manual(values=niche_cols) + theme(legend.position = 'none')+
-    coord_sf(xlim=c(2000, 5000), ylim=c(500, 2000), expand = FALSE) 
+    rasterise(geom_sf(data = as_tibble(imm.niche@meta.data, niche_label=imm.niche$niche_label_fine)%>% filter(patient_id==cont1),
+              aes(geometry = shape, fill = niche_label), color = NA), dpi=100) + theme_bw(base_size=12) + scale_fill_manual(values=niche_cols) + theme(legend.position = 'none')+
+    coord_sf(xlim=c(2000, 5000), ylim=c(500, 2000), expand = FALSE) + ggtitle("ICI-ATN control patient 1 niche tiles")
 
 fig2d = p10
 
-feature = 'STAT1'
-feature2 = 'stat1'
+feature = 'PODXL'
+feature2 = 'podxl'
 df1 = cbind(imm.niche@meta.data, FetchData(imm.niche, feature))%>%
                 janitor::clean_names() %>% mutate(patient_id=`orig_ident`) %>% 
                 filter(patient_id==case1)
 df2 = cbind(imm.niche@meta.data, FetchData(imm.niche, feature))%>%
                 janitor::clean_names() %>% mutate(patient_id=`orig_ident`) %>% 
                 filter(patient_id=='BS22')
-max_ox = max(df1$stat1, df2$stat1)
+max_ox = max(df1$podxl, df2$podxl)
 
 p51 = ggplot() + 
-    geom_sf(data = df1,
-            aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
+    rasterise(geom_sf(data = df1,
+            aes(geometry = shape, fill = !!sym(feature2)), color = NA), dpi=100) + theme_bw(base_size=12) +
     scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(legend.position='right')+
-    coord_sf(xlim=c(1000, 4000), ylim=c(1000, 2500), expand = FALSE)
+    coord_sf(xlim=c(1000, 4000), ylim=c(1000, 2500), expand = FALSE) + ggtitle("PODXL expression")
 
 p52 = ggplot() + 
     geom_sf(data = df2,
             aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
     scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(legend.position='right')+
-    coord_sf(xlim=c(2000, 5000), ylim=c(500, 2000), expand = FALSE)     
+    coord_sf(xlim=c(2000, 5000), ylim=c(500, 2000), expand = FALSE) + ggtitle("PODXL expression")  
+
+feature = 'CD79B'
+feature2 = 'cd79b'
+df1 = cbind(imm.niche@meta.data, FetchData(imm.niche, feature))%>%
+                janitor::clean_names() %>% mutate(patient_id=`orig_ident`) %>% 
+                filter(patient_id==case1)
+df2 = cbind(imm.niche@meta.data, FetchData(imm.niche, feature))%>%
+                janitor::clean_names() %>% mutate(patient_id=`orig_ident`) %>% 
+                filter(patient_id=='BS22')
+max_ox = max(df1$cd79b, df2$cd79b)
+
+p51_2 = ggplot() + 
+    rasterise(geom_sf(data = df1,
+            aes(geometry = shape, fill = !!sym(feature2)), color = NA), dpi=100) + theme_bw(base_size=12) +
+    scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(legend.position='right')+
+    coord_sf(xlim=c(1000, 4000), ylim=c(1000, 2500), expand = FALSE) + ggtitle("CD79B expression")
+
+p52_2 = ggplot() + 
+    geom_sf(data = df2,
+            aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
+    scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(legend.position='right')+
+    coord_sf(xlim=c(2000, 5000), ylim=c(500, 2000), expand = FALSE) + ggtitle("CD79B expression")  
+
+feature = 'UMOD'
+feature2 = 'umod'
+df1 = cbind(imm.niche@meta.data, FetchData(imm.niche, feature))%>%
+                janitor::clean_names() %>% mutate(patient_id=`orig_ident`) %>% 
+                filter(patient_id==case1)
+df2 = cbind(imm.niche@meta.data, FetchData(imm.niche, feature))%>%
+                janitor::clean_names() %>% mutate(patient_id=`orig_ident`) %>% 
+                filter(patient_id=='BS22')
+max_ox = max(df1$umod, df2$umod)
+
+p51_3 = ggplot() + 
+    rasterise(geom_sf(data = df1,
+            aes(geometry = shape, fill = !!sym(feature2)), color = NA), dpi=100) + theme_bw(base_size=12) +
+    scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(legend.position='right')+
+    coord_sf(xlim=c(1000, 4000), ylim=c(1000, 2500), expand = FALSE) + ggtitle("UMOD expression")
+
+p52_3 = ggplot() + 
+    geom_sf(data = df2,
+            aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
+    scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(legend.position='right')+
+    coord_sf(xlim=c(2000, 5000), ylim=c(500, 2000), expand = FALSE) + ggtitle("UMOD expression")  
+
+feature = 'CUBN'
+feature2 = 'cubn'
+df1 = cbind(imm.niche@meta.data, FetchData(imm.niche, feature))%>%
+                janitor::clean_names() %>% mutate(patient_id=`orig_ident`) %>% 
+                filter(patient_id==case1)
+df2 = cbind(imm.niche@meta.data, FetchData(imm.niche, feature))%>%
+                janitor::clean_names() %>% mutate(patient_id=`orig_ident`) %>% 
+                filter(patient_id=='BS22')
+max_ox = max(df1$cubn, df2$cubn)
+
+p51_4 = ggplot() + 
+    rasterise(geom_sf(data = df1,
+            aes(geometry = shape, fill = !!sym(feature2)), color = NA), dpi=100) + theme_bw(base_size=12) +
+    scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(legend.position='right')+
+    coord_sf(xlim=c(1000, 4000), ylim=c(1000, 2500), expand = FALSE) + ggtitle("CUBN expression")
+
+p52_4 = ggplot() + 
+    geom_sf(data = df2,
+            aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
+    scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(legend.position='right')+
+    coord_sf(xlim=c(2000, 5000), ylim=c(500, 2000), expand = FALSE) + ggtitle("CUBN expression")  
 
 fig2c + fig2d + p51 + p52 + plot_layout(ncol=2)
 ggsave('Fig2_part2.pdf', width=20, height=20)
 
+(fig2b | ht_plot) / (fig2c | fig2d) / (((p51 + p51_2) / (p51_3 + p51_4)) | ((p52+p52_2)/(p52_3+p52_4))) / (fig2e |  fig2a) + 
+ plot_annotation(
+    tag_levels = list(c("A", "B", "C", "D", "E", 'F', 'G', 'H', 'I', 'J', 'K', 'L','M','N')), 
+ ) &  theme(plot.tag = element_text(face = "bold", size = 28))
 
+ggsave('Fig2_v3.pdf', width=18.5, height=21.5)
 

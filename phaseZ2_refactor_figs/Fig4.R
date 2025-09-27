@@ -310,7 +310,7 @@ max_ox = max(df1$oxidative_phos, df2$oxidative_phos)
 p21 = ggplot() + 
     geom_sf(data = df1,
             aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
-    scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')
+    scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')+ggtitle("OXIDATIVE PHOS")
 p22 = ggplot() + 
     geom_sf(data = df2,
             aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
@@ -329,7 +329,7 @@ p31 = ggplot() +
                 janitor::clean_names() %>% mutate(patient_id=`orig_ident`) %>% 
                 filter(patient_id==case1),
             aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
-    scale_fill_gradient(limits = c(0,max_jak), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')
+    scale_fill_gradient(limits = c(0,max_jak), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')+ggtitle("JAK STAT")
 p32 = ggplot() + 
     geom_sf(data = cbind(seurat.object@meta.data, FetchData(seurat.object, feature))%>%
                 janitor::clean_names() %>% mutate(patient_id=`orig_ident`) %>% 
@@ -344,7 +344,7 @@ p41 = ggplot() +
                 janitor::clean_names() %>% mutate(patient_id=`orig_ident`) %>% 
                 filter(patient_id==case1),
             aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
-    scale_fill_gradient(limits = c(0,max_jak), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')
+    scale_fill_gradient(limits = c(0,max_jak), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')+ggtitle("Chemokine")
 p42 = ggplot() + 
     geom_sf(data = cbind(seurat.object@meta.data, FetchData(seurat.object, feature))%>%
                 janitor::clean_names() %>% mutate(patient_id=`orig_ident`) %>% 
@@ -363,7 +363,7 @@ max_ox = max(df1$ifng, df2$ifng)
 p51 = ggplot() + 
     geom_sf(data = df1,
             aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
-    scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')
+    scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')+ggtitle("IFNG")
 p52 = ggplot() + 
     geom_sf(data = df2,
             aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
@@ -372,46 +372,46 @@ part2<-(p21/p22)|(p31/p32)|(p41/p42)|(p51/p52)
 ggsave("Fig4_part2.svg", plot = part2, width=25, height=8)
 
 
-pdf("Fig4.pdf", width=28, height=16)
-p2 = ggplot(test.imm.niche%>%filter(padj<=5e-2)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = NES, y = pathway, fill = NES > 0)) +
+pdf("Fig4.pdf", width=22.5, height=13.5)
+p2 = ggplot(test.imm.niche%>%filter(padj<=5e-2)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = abs(NES), y = gsub("HALLMARK_|KEGG_", "", pathway), fill = NES > 0)) +
     geom_col() + 
     scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#d95f02")) +
     geom_vline(xintercept = 0, color = "black") +
-    theme_minimal(base_size = 9)  + ggtitle("Immune KEGG GSEA")  
-p3 = ggplot(test.fib.niche%>%filter(padj<=5e-2)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = NES, y = pathway, fill = NES > 0)) +
+    theme_minimal(base_size = 9)  + ggtitle("Immune KEGG GSEA")  +ylab("")
+p3 = ggplot(test.fib.niche%>%filter(padj<=5e-2)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = abs(NES), y = gsub("HALLMARK_|KEGG_", "", pathway), fill = NES > 0)) +
     geom_col() + 
     scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#d95f02")) +
     geom_vline(xintercept = 0, color = "black") +
-    theme_minimal(base_size = 9)  + ggtitle("Fibrosis & Interstitium KEGG GSEA")  
-p4 = ggplot(test.colduct.niche%>%filter(padj<=5e-2)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = NES, y = pathway, fill = NES > 0)) +
+    theme_minimal(base_size = 9)  + ggtitle("Fibrosis & Interstitium KEGG GSEA")   +ylab("")
+p4 = ggplot(test.colduct.niche%>%filter(padj<=5e-2)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = abs(NES), y = gsub("HALLMARK_|KEGG_", "", pathway), fill = NES > 0)) +
     geom_col() + 
     scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#d95f02")) +
     geom_vline(xintercept = 0, color = "black") +
-    theme_minimal(base_size = 9)  + ggtitle("Collecting Duct KEGG GSEA")  
-p5 = ggplot(test.Glomerulus.niche%>%filter(padj<=5e-2)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = NES, y = pathway, fill = NES > 0)) +
+    theme_minimal(base_size = 9)  + ggtitle("Collecting Duct KEGG GSEA")   +ylab("")
+p5 = ggplot(test.Glomerulus.niche%>%filter(padj<=5e-2)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = abs(NES), y = gsub("HALLMARK_|KEGG_", "", pathway), fill = NES > 0)) +
     geom_col() + 
     scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#d95f02")) +
     geom_vline(xintercept = 0, color = "black") +
     theme_minimal(base_size = 9)  + ggtitle("Glomerulus GSEA")  
-p6 = ggplot(test.imm.niche.H%>%filter(padj<=5e-2)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = NES, y = pathway, fill = NES > 0)) +
+p6 = ggplot(test.imm.niche.H%>%filter(padj<=5e-2)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = abs(NES), y = gsub("HALLMARK_|KEGG_", "", pathway), fill = NES > 0)) +
     geom_col() + 
     scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#d95f02")) +
     geom_vline(xintercept = 0, color = "black") +
-    theme_minimal(base_size = 9)  + ggtitle("Immune Hallmarks GSEA")  
-p7 = ggplot(test.fib.niche.H%>%filter(padj<=5e-2)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = NES, y = pathway, fill = NES > 0)) +
+    theme_minimal(base_size = 9)  + ggtitle("Immune Hallmarks GSEA")   +ylab("")
+p7 = ggplot(test.fib.niche.H%>%filter(padj<=5e-2)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = abs(NES), y = gsub("HALLMARK_|KEGG_", "", pathway), fill = NES > 0)) +
     geom_col() + 
     scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#d95f02")) +
     geom_vline(xintercept = 0, color = "black") +
-    theme_minimal(base_size = 9)  + ggtitle("Fibrosis & Interstitium GSEA")  
-p8 = ggplot(test.colduct.niche.H%>%filter(padj<=5e-2)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = NES, y = pathway, fill = NES > 0)) +
+    theme_minimal(base_size = 9)  + ggtitle("Fibrosis & Interstitium GSEA")   +ylab("")
+p8 = ggplot(test.colduct.niche.H%>%filter(padj<=5e-2)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = abs(NES), y = gsub("HALLMARK_|KEGG_", "", pathway), fill = NES > 0)) +
     geom_col() + 
     scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#d95f02")) +
     geom_vline(xintercept = 0, color = "black") +
-    theme_minimal(base_size = 9)  + ggtitle("Collecting Duct Hallmarks GSEA")  
-p9 = ggplot(test.Glomerulus.niche.H%>%filter(padj<=5e-2)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = NES, y = pathway, fill = NES > 0)) +
+    theme_minimal(base_size = 9)  + ggtitle("Collecting Duct Hallmarks GSEA")   +ylab("")
+p9 = ggplot(test.Glomerulus.niche.H%>%filter(padj<=5e-2)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = abs(NES), y = gsub("HALLMARK_|KEGG_", "", pathway), fill = NES > 0)) +
     geom_col() + 
     scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#d95f02")) +
     geom_vline(xintercept = 0, color = "black") +
-    theme_minimal(base_size = 9)  + ggtitle("Glomerulus Hallmarks GSEA")  
+    theme_minimal(base_size = 9)  + ggtitle("Glomerulus Hallmarks GSEA")   +ylab("")
 print((p1+(p4/p8)+(p3/p7)+(p2/p6)+patchwork::plot_layout(ncol=4, width=c(7, 2, 2, 2.3)))/part2)
 dev.off()
