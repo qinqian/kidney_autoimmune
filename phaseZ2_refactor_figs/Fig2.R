@@ -87,7 +87,8 @@ niche_cols = c(
 )
 
 
-sc.niche <- readRDS("sopa_baysor_tessera.rds")
+sc.niche <- readRDS("../phaseF_newpipeline/sopa_seg/sopa_baysor_tessera.rds")
+
 lennard.subtype <- readRDS("250721_cells_annotated_lennard.rds")
 imm.niche <- readRDS("250711_niches.rds")
 

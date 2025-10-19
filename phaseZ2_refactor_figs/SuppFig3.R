@@ -24,12 +24,13 @@ fig.size <- function(h, w) {
     options(repr.plot.height = h, repr.plot.width = w)
 }
 
+
 niche_cols = c(
   # Immune (purples)
   "Immune"              = "#6a51a3",  # medium-deep purple
 
   # Myeloid / Skeletal Muscle (yellows/oranges)
-  "Skeletal Muscle"      = "#fdcc8a",  # warm orange-yellow
+  #"Skeletal Muscle"      = "#fdcc8a",  # warm orange-yellow
 
   # Endothelial / Fibrosis (blues)
   "Fibrosis & Interstitium" = "#6baed6",  # light sky blue
@@ -43,8 +44,9 @@ niche_cols = c(
   "Collecting Duct"          = "#67000d",  # very dark red
 
   # Duct / Specialized (violet)
-  "Glomerulus" = "#756bb1"  # violet (distinct from immune purple)
+  "Glomerulus" = "#fdcc8a"  # violet (distinct from immune purple)
 )
+
 
 library(sf)
 library(Seurat)

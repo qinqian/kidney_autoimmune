@@ -310,11 +310,11 @@ max_ox = max(df1$oxidative_phos, df2$oxidative_phos)
 p21 = ggplot() + 
     geom_sf(data = df1,
             aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
-    scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')+ggtitle("OXIDATIVE PHOS")
+    scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')+ggtitle("OXIDATIVE PHOS") + coord_sf(xlim=c(1000, 4000), ylim=c(1000, 2500), expand = FALSE)
 p22 = ggplot() + 
     geom_sf(data = df2,
             aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
-    scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')
+    scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right') + coord_sf(xlim=c(2000, 5000), ylim=c(500, 2000), expand = FALSE)
 feature = 'JAK_STAT'
 feature2 = 'jak_stat'
 df1 = cbind(seurat.object@meta.data, FetchData(seurat.object, feature))%>%
@@ -328,13 +328,13 @@ p31 = ggplot() +
     geom_sf(data = cbind(seurat.object@meta.data, FetchData(seurat.object, feature))%>%
                 janitor::clean_names() %>% mutate(patient_id=`orig_ident`) %>% 
                 filter(patient_id==case1),
-            aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
+            aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +  coord_sf(xlim=c(1000, 4000), ylim=c(1000, 2500), expand = FALSE) +
     scale_fill_gradient(limits = c(0,max_jak), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')+ggtitle("JAK STAT")
 p32 = ggplot() + 
     geom_sf(data = cbind(seurat.object@meta.data, FetchData(seurat.object, feature))%>%
                 janitor::clean_names() %>% mutate(patient_id=`orig_ident`) %>% 
                 filter(patient_id=='BS2'),
-            aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
+            aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) + coord_sf(xlim=c(2000, 5000), ylim=c(500, 2000), expand = FALSE) + 
     scale_fill_gradient(limits = c(0,max_jak), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')
 feature = 'chemokine'
 feature2 = 'chemokine'
@@ -343,13 +343,13 @@ p41 = ggplot() +
     geom_sf(data = cbind(seurat.object@meta.data, FetchData(seurat.object, feature))%>%
                 janitor::clean_names() %>% mutate(patient_id=`orig_ident`) %>% 
                 filter(patient_id==case1),
-            aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
+            aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) + coord_sf(xlim=c(1000, 4000), ylim=c(1000, 2500), expand = FALSE) +
     scale_fill_gradient(limits = c(0,max_jak), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')+ggtitle("Chemokine")
 p42 = ggplot() + 
     geom_sf(data = cbind(seurat.object@meta.data, FetchData(seurat.object, feature))%>%
                 janitor::clean_names() %>% mutate(patient_id=`orig_ident`) %>% 
                 filter(patient_id=='BS2'),
-            aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
+            aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) + coord_sf(xlim=c(2000, 5000), ylim=c(500, 2000), expand = FALSE) +
     scale_fill_gradient(limits = c(0,max_jak), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')
 feature = 'IFNG'
 feature2 = 'ifng'
@@ -362,11 +362,11 @@ df2 = cbind(seurat.object@meta.data, FetchData(seurat.object, feature))%>%
 max_ox = max(df1$ifng, df2$ifng)
 p51 = ggplot() + 
     geom_sf(data = df1,
-            aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
+            aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) + coord_sf(xlim=c(1000, 4000), ylim=c(1000, 2500), expand = FALSE) +
     scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')+ggtitle("IFNG")
 p52 = ggplot() + 
     geom_sf(data = df2,
-            aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) +
+            aes(geometry = shape, fill = !!sym(feature2)), color = NA) + theme_bw(base_size=12) + coord_sf(xlim=c(2000, 5000), ylim=c(500, 2000), expand = FALSE) +
     scale_fill_gradient(limits = c(0,max_ox), low = 'white', high = '#832424')+ theme(aspect.ratio = 1, legend.position='right')
 part2<-(p21/p22)|(p31/p32)|(p41/p42)|(p51/p52)
 ggsave("Fig4_part2.svg", plot = part2, width=25, height=8)
@@ -413,5 +413,9 @@ p9 = ggplot(test.Glomerulus.niche.H%>%filter(padj<=5e-2)%>%mutate(pathway=factor
     scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#d95f02")) +
     geom_vline(xintercept = 0, color = "black") +
     theme_minimal(base_size = 9)  + ggtitle("Glomerulus Hallmarks GSEA")   +ylab("")
-print((p1+(p4/p8)+(p3/p7)+(p2/p6)+patchwork::plot_layout(ncol=4, width=c(7, 2, 2, 2.3)))/part2)
+print((p1+(p4/p8)+(p3/p7)+(p2/p6)+patchwork::plot_layout(ncol=4, width=c(7, 2, 2, 2.3)))/part2+
+ plot_annotation(
+    tag_levels = list(c("A", "B", "C", "D", "E", 'F', 'G', 'H', 'I', 'J', 'K', 'L','M','N')), 
+ ) &  theme(plot.tag = element_text(face = "bold", size = 28))
+      )
 dev.off()
