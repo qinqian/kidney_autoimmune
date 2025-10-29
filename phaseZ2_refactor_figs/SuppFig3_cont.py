@@ -178,8 +178,6 @@ L,T = STalign.L_T_from_points(pointsI, pointsJ)
 pointsI_trans = np.dot(np.linalg.inv(L), [pointsJ[:, 0] - T[0], pointsJ[:, 1] - T[1]]).T
 pointsJ_trans = L @ pointsI.T + T[:, None]
 
-print(pointsI_trans)
-
 # plot
 extentJ = STalign.extent_from_x((YJ,XJ))
 
