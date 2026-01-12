@@ -54,10 +54,10 @@ celltype_colors <- c(
   "Podocyte" = "#fbb4ae",
   "Parietal" = "#f768a1",
   "Proximal Tubule" = "#c51b8a",
-  "Thick Ascending Limb" = "#7a0177",
+  "Loop of Henle" = "#7a0177",
   "Thin Ascending Limb" = "#fdae6b",
   "Thin Descending Limb" = "#e6550d",
-  "Interstitial" = "#a63603",
+  "Stroma" = "#a63603",
   "Distal Convoluted Tubule" = "#6e016b",
   "Collecting Duct-IC" = "#6e016b",
   "Collecting Duct-PC" = "#6e016b",
@@ -78,7 +78,7 @@ niche_cols = c(
   # Kidney cells (reds → pinks → violets, smooth gradient)
   "Injured Proximal Tubule"  = "#fcbba1",  # soft pink
   "Proximal Tubule"          = "#fb6a4a",  # salmon
-  "Thick Ascending Limb"     = "#ef3b2c",  # tomato red
+  "Loop of Henle"     = "#ef3b2c",  # tomato red
   "Distal Convoluted Tubule" = "#a50f15",  # dark red
   "Collecting Duct"          = "#67000d",  # very dark red
 
@@ -89,14 +89,15 @@ niche_cols = c(
 
 sc.niche <- readRDS("../phaseF_newpipeline/sopa_seg/sopa_baysor_tessera.rds")
 
-lennard.subtype <- readRDS("250721_cells_annotated_lennard.rds")
-imm.niche <- readRDS("250711_niches.rds")
+lennard.subtype <- readRDS("../phaseZ_finalize_figs/250721_cells_annotated_lennard.rds")
+imm.niche <- readRDS("../phaseZ_finalize_figs/250711_niches.rds")
 
 niche.merge = imm.niche 
 obj.merge = lennard.subtype
-orig.merge = readRDS("all_KPMP_integrate_singlet_umap_umapnn_labels_umap.rds")
+orig.merge = readRDS("../phaseF_newpipeline/sopa_seg/output/all_KPMP_integrate_singlet_umap_umapnn_labels_umap.rds")
 
-meta = read.csv("shruti_meta_clean (3).csv")
+
+meta = read.csv("../phaseK_metadata/shruti_meta_clean.csv")
 input_meta = meta[,c('slide_id', 'age', 'sex', 'case_ctrl', 'ICPi',  'malignancy', 'eGFR_base')] %>% arrange(case_ctrl)
 
 cells_to_keep <- colnames(orig.merge)[orig.merge$tech=='xenium']
@@ -135,9 +136,16 @@ obj.merge@meta.data$case_ctrl_num = as.numeric(factor(str_trim(obj.merge@meta.da
 obj.merge@meta.data$cell_label = gsub(" Cell", "", obj.merge@meta.data$lennard_label)
 obj.merge@meta.data = obj.merge@meta.data %>% mutate(cell_label = ifelse(cell_label=='Immune', 'Immune (LowQ)', cell_label))
 
+obj.merge@meta.data  = obj.merge@meta.data %>% mutate(cell_label=case_when(
+                                                                               cell_label %in% c("Basophil") ~ "Mast", 
+                                                                                   cell_label %in% c("Interstitial") ~ "Stroma",  
+                                                                                       .default = cell_label 
+                                                                               )
+                                                     )
 
-#orig.baysor <- readRDS("../phaseF_newpipeline/sopa_seg/comb_h5ad/kidney_orig_seg_merged.rds")
-orig.baysor <- readRDS("kidney_orig_seg_merged.rds")
+
+orig.baysor <- readRDS("../phaseF_newpipeline/sopa_seg/comb_h5ad/kidney_orig_seg_merged.rds")
+#orig.baysor <- readRDS("kidney_orig_seg_merged.rds")
 orig.baysor@meta.data <- orig.baysor@meta.data%>%unite("uniq_id", c(sample, cell_id), remove=F)
 lennard.subtype@meta.data <- lennard.subtype@meta.data%>%unite("uniq_id", c(sample, cell_id), remove=F)
 xy <- Embeddings(orig.baysor, 'spatial')[match(lennard.subtype@meta.data$uniq_id, orig.baysor@meta.data$uniq_id),]
@@ -145,7 +153,7 @@ rm(orig.baysor)
 
 markers = c(            "CALB1", "HSD11B2", "SCNN1G",
 
-    "TNXB", "COL5A1", "PDGFRA",
+  "TNXB", "COL5A1", "PDGFRA",
                         "PLA2R1", "PODXL", "WT1",
             "CXCL9", "SLAMF7", "CD38", # "IL2RG",
             "HAVCR1", "CDH6", "SOX9",            
@@ -164,17 +172,56 @@ names(markers) <- c(
     
                     "PT", "PT", "PT",
     
-                    "TAL", "TAL", "TAL",
+                    "Loop of Henle", "Loop of Henle", "Loop of Henle",
                     "Vessel", "Vessel", "Vessel"
                     )
 
+imm.niche@meta.data  = imm.niche@meta.data %>% mutate(niche_label=case_when(
+                                                                               niche_label %in% c("Thick Ascending Limb") ~ "Loop of Henle", 
+                                                                                       .default = niche_label 
+                                                                               )
+                                                     )
+
+niche.merge@meta.data  = niche.merge@meta.data %>% mutate(niche_label=case_when(
+                                                                               niche_label %in% c("Thick Ascending Limb") ~ "Loop of Henle", 
+                                                                                       .default = niche_label 
+                                                                               ))
+
+
+rownames(niche.merge@meta.data) = 1:nrow(niche.merge@meta.data)
+
+
+sample_translator <- c("BS21-N65682A2" = "1",
+                       "BS22_12012A1" = "2",
+                       "BS22-T41795A1" = "3",
+                       "BS2_61615A1" = "4",
+                       "BS23_49001A1" = "5",
+                       "BS23_52206A2" = "6",
+                       "BS24-R31519A2" = "7",
+                       "BS24-M35359A1" = "8")
+sample_to_condition <- c("1" = "ICI-AIN",
+                         "2" = "ICI-ATN",
+                         "3" = "ICI-AIN",
+                         "4" = "ICI-ATN",
+                         "5" = "ICI-AIN",
+                         "6" = "ICI-AIN",
+                         "7" = "ICI-ATN",
+                         "8" = "ICI-ATN")
+
+niche.merge@meta.data[, 'patient'] = sample_translator[match(gsub("(A[1,2])__2.*$", "\\1", niche.merge$orig.ident), names(sample_translator))]
+
+niche.merge@meta.data[, 'orig.ident'] = NULL
+niche.merge@meta.data[, 'id'] = NULL
+niche.merge@meta.data[, 'sample_id'] = NULL
+
+
+saveRDS(niche.merge, 'ICI_niche_merge.rds')
 
 ## axis <- ggh4x::guide_axis_truncated(
 ##   trunc_lower = unit(0, "npc"),
 ##   trunc_upper = unit(1, "cm")
 ## )
 
-print('------')
 p2 = DotPlot_scCustom(subset(imm.niche, subset=niche_label != 'Skeletal Muscle'), features=unname(markers), group.by='niche_label') + 
     theme(axis.text.x=element_text(face="bold", angle=90, hjust = 1, vjust=1), axis.text.y=element_text(face="bold")) + xlab("") + ylab("") + get_theme(angle=90, size=12) + theme(legend.box="vertical", legend.margin=margin(), plot.margin = unit(c(0,0,0,0), "cm"), ) + scale_size_continuous(range = c(0.1, 2)) +ggtitle("")
 
@@ -202,6 +249,12 @@ p3=FeaturePlot_scCustom(niche.cna, features = c('cna_ncorrs_fdr10'), raster=T, r
     scale_color_gradient2(high = "#de2d26", mid = "white", low = "#2c7fb8", midpoint = 0,  guide = guide_colorbar(direction = "vertical"))+
     labs(title = 'ICI-AIN-associated niches', subtitle = 'Filtered for FDR<0.10', color = 'Correlation')+ ggplot2::theme(legend.position = "right")
 fig2e = p3
+
+p3=FeaturePlot_scCustom(niche.cna, features = c('VCAM1'), raster=T, raster.dpi=c(150, 150))[[1]] +
+    scale_color_gradient2(high = "#de2d26", mid = "white", low = "#2c7fb8", midpoint = 0,  guide = guide_colorbar(direction = "vertical"))+
+    labs(title = 'VCAM1+ niche')+ggplot2::theme(legend.position = "right")
+fig2z = p3
+
 
 sc.niche$obj@meta.data = sc.niche$obj@meta.data %>% mutate(lennard_label=lennard.subtype@meta.data$lennard_label)
 sc.niche$obj@meta.data = sc.niche$obj@meta.data %>% mutate(tile_label = imm.niche@meta.data[match(sc.niche$obj@meta.data$tile_id, rownames(imm.niche@meta.data)), 'niche_label'])
@@ -383,10 +436,11 @@ p52_4 = ggplot() +
 fig2c + fig2d + p51 + p52 + plot_layout(ncol=2)
 ggsave('Fig2_part2.pdf', width=20, height=20)
 
-(fig2b | ht_plot) / (fig2c | fig2d) / (((p51 + p51_2) / (p51_3 + p51_4)) | ((p52+p52_2)/(p52_3+p52_4))) / (fig2e |  fig2a) + 
+(fig2b | ht_plot) / (fig2c | fig2d) / (((p51 + p51_2) / (p51_3 + p51_4)) | ((p52+p52_2)/(p52_3+p52_4))) / (fig2a | fig2z | fig2e) + 
  plot_annotation(
-    tag_levels = list(c("A", "B", "C", "D", "E", 'F', 'G', 'H', 'I', 'J', 'K', 'L','M','N')), 
+    tag_levels = list(c("A", "B", "C", "D", "E", 'F', 'G', 'H', 'I', 'J', 'K', 'L','M','N', "O")), 
  ) &  theme(plot.tag = element_text(face = "bold", size = 28))
 
-ggsave('Fig2_v3.pdf', width=18.5, height=21.5)
+#ggsave('Fig2_v3.pdf', width=18.5, height=21.5)
+ggsave('Fig2_v4.pdf', width=16.5, height=20.5)
 

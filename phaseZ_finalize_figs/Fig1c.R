@@ -19,6 +19,25 @@ suppressPackageStartupMessages({
 })
 
 
+sample_translator <- c("BS21-N65682A2" = "1",
+                       "BS22_12012A1" = "2",
+                       "BS22-T41795A1" = "3",
+                       "BS2_61615A1" = "4",
+                       "BS23_49001A1" = "5",
+                       "BS23_52206A2" = "6",
+                       "BS24-R31519A2" = "7",
+                       "BS24-M35359A1" = "8")
+
+sample_to_condition <- c("1" = "ICI-AIN",
+                         "2" = "ICI-ATN",
+                         "3" = "ICI-AIN",
+                         "4" = "ICI-ATN",
+                         "5" = "ICI-AIN",
+                         "6" = "ICI-AIN",
+                         "7" = "ICI-ATN",
+                         "8" = "ICI-ATN")
+
+
 fig.size <- function(h, w) {
     options(repr.plot.height = h, repr.plot.width = w)
 }
@@ -37,6 +56,7 @@ obj.merge = readRDS("250721_cells_annotated_lennard.rds")
 
 meta = read.csv("~/shruti_meta_clean (3).csv")
 input_meta = meta[,c('slide_id', 'age', 'sex', 'case_ctrl', 'ICPi',  'malignancy', 'eGFR_base')] %>% arrange(case_ctrl)
+
 #tile_obj$condition = str_trim(meta[match(str_extract(as.character(obj.merge$sample_id), "(.*)__", group=1), meta$slide_id), 'case_ctrl'])
 
 obj.merge@meta.data$cell_label = gsub(" Cell", "", obj.merge@meta.data$lennard_label)
@@ -50,10 +70,39 @@ set.seed(999)
 
 obj.merge@meta.data$case_ctrl = factor(str_trim(obj.merge@meta.data$case_ctrl), levels=c("Control", "Case"))
 
+print(table(obj.merge@meta.data$cell_label))
+
+obj.merge@meta.data  = obj.merge@meta.data %>% mutate(cell_label=case_when(
+    cell_label %in% c("Basophil") ~ "Mast", 
+    cell_label %in% c("Interstitial") ~ "Stroma",  
+    .default = cell_label 
+))
+
+obj.merge@meta.data  = obj.merge@meta.data %>% mutate(lennard_label=case_when(
+    lennard_label %in% c("Basophil") ~ "Mast", 
+    lennard_label %in% c("Interstitial Cell") ~ "Stroma",  
+    .default = lennard_label 
+  ))
+
+
+obj.merge@meta.data$uniq_id <- NULL
+obj.merge@meta.data$sample <- NULL
+obj.merge@meta.data$percent.mt <- NULL
+obj.merge@meta.data$SpecimenID <- NULL
+obj.merge@meta.data$PrimaryAdjudicatedCategory <- NULL
+obj.merge@meta.data$diabetes_history <- NULL
+obj.merge@meta.data$hypertension <- NULL
+obj.merge@meta.data$eGFR <- NULL
+obj.merge@meta.data$is_primary_data <- NULL
+obj.merge@meta.data$disease_category <- NULL
+
+obj.merge@meta.data[,13:37] <- list(NULL)
+
+
 res = obj.merge |>
     sccomp_estimate(
       formula_composition = ~ case_ctrl,
-      .sample = sample_id, .cell_group = cell_label,
+      sample = "sample_id", cell_group = "cell_label",
       cores = 1, verbose=FALSE
     )
 
@@ -70,6 +119,7 @@ input_meta = meta[,c('slide_id', 'age', 'sex', 'case_ctrl', 'ICPi',  'malignancy
 
 test = obj.merge@meta.data %>% filter(tech=='xenium') %>% janitor::clean_names()
 test$condition = str_trim(meta[match(str_extract(as.character(subset(obj.merge, subset=tech=='xenium')$orig.ident), "__(BS.*A[1,2])__(2.+)", group=1), meta$slide_id), 'case_ctrl'])
+
 
 sample_ids = test %>% filter(tech=='xenium') %>% count(sample_ids, lennard_label) %>% group_by(sample_ids) %>% 
     mutate(ratio = n/sum(n)) %>% select(-n) %>% pivot_wider(names_from=lennard_label, values_from=ratio, values_fill = 0) %>% ungroup() %>% select(sample_ids) %>% pull()
@@ -119,8 +169,13 @@ ha1 = rowAnnotation(samples = my_sample_col$group,
 colnames(sample_mat)[colnames(sample_mat)=='Immune Cell'] = 'Immune (LowQ)'
 
 cell_label = res %>% filter(!grepl("Intercep", parameter)) %>% arrange(desc(c_effect)) %>% select(cell_label) %>% pull()
+print(cell_label)
 
 colnames(sample_mat) = gsub(" Cell", "", colnames(sample_mat))
+
+print(colnames(sample_mat))
+print(setdiff(colnames(sample_mat), cell_label))
+print(cell_label)
 
 sample_mat = sample_mat[, cell_label]
 
@@ -154,3 +209,16 @@ ht_plot <- wrap_elements(full = ht_grob)
 combined <- ht_plot + (p+ggtitle("ICI-AIN vs ICI-ATN")) + plot_layout(ncol = 1, height=c(1.0, 2.3))
 print(combined)
 dev.off()
+
+
+
+## saveRDS(obj.merge, file='sc.obj.merge.rds')
+
+obj.merge@meta.data[, 'patient'] = sample_translator[match(obj.merge$sample_id, names(sample_translator))]
+obj.merge@meta.data$orig.ident <- NULL
+obj.merge@meta.data$sample_id <- NULL
+obj.merge@meta.data$sample_ids <- NULL
+
+saveRDS(obj.merge, "ICI_obj_merge.rds")
+
+

@@ -182,3 +182,4 @@ plot_genes_tiles_cont(coords=list(xlim=list(c(2500, 2800),c(3000, 3350), c(3600,
                                   ylim=list(c(1300, 1600),c(900, 1100), c(1000, 1220), c(1000, 1200))))
                              ## genes=c("PODXL", "CD3E", "COL5A1", "CALB1")) {
 dev.off()
+

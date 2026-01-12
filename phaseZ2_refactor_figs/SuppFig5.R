@@ -184,7 +184,7 @@ p4 = ggplot(test.limb.niche%>%filter(padj<=5e-2)%>%slice_head(n=15)%>%mutate(pat
     geom_col() + 
     scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#d95f02")) +
     geom_vline(xintercept = 0, color = "black") +
-    theme_minimal(base_size = 12)  + ggtitle("Thick Ascending Limb KEGG GSEA")    +ylab("")
+    theme_minimal(base_size = 12)  + ggtitle("Loop of Henle KEGG GSEA")    +ylab("")
 p5 = ggplot(test.distal.niche%>%filter(padj<=5e-2)%>%slice_head(n=15)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = abs(NES), y = gsub("HALLMARK_|KEGG_", "", pathway), fill = NES > 0)) +
     geom_col() + 
     scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#d95f02")) +
@@ -214,7 +214,7 @@ p40 = ggplot(test.limb.niche.H%>%filter(padj<=5e-2)%>%slice_head(n=15)%>%mutate(
     geom_col() + 
     scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#d95f02")) +
     geom_vline(xintercept = 0, color = "black") +
-    theme_minimal(base_size = 12)  + ggtitle("Thick Ascending Limb Hallmarks GSEA")    +ylab("")
+    theme_minimal(base_size = 12)  + ggtitle("Loop of Henle Hallmarks GSEA")    +ylab("")
 p50 = ggplot(test.distal.niche.H%>%filter(padj<=5e-2)%>%slice_head(n=15)%>%mutate(pathway=factor(pathway, levels=as.character(pathway))), aes(x = abs(NES), y = gsub("HALLMARK_|KEGG_", "", pathway), fill = NES > 0)) +
     geom_col() + 
     scale_fill_manual(values = c("TRUE" = "#1b9e77", "FALSE" = "#d95f02")) +
@@ -237,3 +237,4 @@ dev.off()
 pdf("SuppFig5_v3b.pdf", width=18, height=18)
 print((p1d|p6|p60)/(p1e|p4|p40)/(p1f|p5|p50))
 dev.off()
+
